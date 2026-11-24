@@ -1,3 +1,4 @@
+painel.html
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -388,7 +389,11 @@ function iniciar(){ $("#login").style.display="none"; $("#app").style.display="b
   OFF&&OFF(); OFF=DB.ouvirHoje(lista=>{ const antes=new Set(PED.map(p=>p.id)); PED=lista.sort((a,b)=>a.criado-b.criado);
     if(PRIMEIRA){ PRIMEIRA=false; lista.forEach(p=>IMPRESSOS.add(p.id)); } else if(AUTO){ lista.filter(p=>p.status==="recebido"&&!IMPRESSOS.has(p.id)).forEach(filaImprime); }
     PED.filter(p=>!antes.has(p.id)&&p.status==="recebido"&&antes.size).forEach(p=>{ if(document.hidden&&"Notification" in window&&Notification.permission==="granted") try{ new Notification(`Novo pedido #${p.num}`,{body:`${p.cliente.nome} · ${R(p.total)}`,icon:undefined}); }catch(e){} });
-    desenha(); alarmeChk(); }, ()=>{ $("#lerr").textContent="Sem permissão para ver os pedidos desta loja."; }); }
+    desenha(); alarmeChk(); }, ()=>semPermissao()); }
+const ERRO=e=>e&&e.code==="permission-denied"?"Esta conta não tem permissão no painel do "+NOME_LOJA+". Saia e entre com o e-mail da loja.":"Não foi possível concluir. Verifique a internet e tente de novo.";
+async function semPermissao(){ const em=(firebase.auth&&firebase.auth().currentUser&&firebase.auth().currentUser.email)||"esta conta"; try{ await DB.sair(); }catch(e){}
+  $("#app").style.display="none"; $("#itens").style.display="none"; $("#toque").classList.remove("on"); $("#login").style.display=""; $("#lEmail").value="paivalanche@gmail.com"; $("#lSenha").value="";
+  $("#lerr").textContent=`A conta ${em} não tem acesso ao painel do ${NOME_LOJA}. Entre com paivalanche@gmail.com.`; }
 setTimeout(()=>DB.logado(ok=>{ if(ok) iniciar(); }),0); /* depois de todo o script carregar */
 $("#bSair").onclick=async()=>{ await DB.sair(); location.reload(); };
 $("#bSom").onclick=()=>{ SOM=!SOM; ac(); $("#bSom").textContent=SOM?"🔔 Som ligado":"🔕 Som desligado"; if(SOM) toque(); };
@@ -449,7 +454,7 @@ function desenhaItens(){ const q=nk($("#iBusca").value), grupos={}, ordem=[];
   const nOff=CAT.filter(i=>OFFP[i.key]).length; $("#bItens").textContent=nOff?`📋 Itens do dia (${nOff} esgotado${nOff>1?"s":""})`:"📋 Itens do dia";
   $("#iLista").innerHTML=ordem.map(c=>`<div class="grp"><h3>${esc(c)}<small>${grupos[c].filter(i=>OFFP[i.key]).length?grupos[c].filter(i=>OFFP[i.key]).length+" esgotado(s)":"tudo disponível"}</small></h3>${grupos[c].map(i=>{ const off=!!OFFP[i.key];
     return `<div class="ir${off||!i.planilha?" off":""}"><div class="nm"><b>${esc(i.nome)}</b><small>${esc(i.preco?("R$ "+i.preco):"")}</small></div>${!i.planilha?`<button class="sw pl" disabled>Desativado na planilha</button>`:`<button class="sw ${off?"off":"on"}" data-tg="${esc(i.key)}">${off?"⛔ Esgotado":"✅ Disponível"}</button>`}</div>`; }).join("")}</div>`).join("")||`<div class="vazio">Nenhum item encontrado.</div>`; }
-async function salvaOff(novo){ try{ await DB.salvarOff(novo); const s=$("#salvo"); s.classList.add("on"); clearTimeout(s._t); s._t=setTimeout(()=>s.classList.remove("on"),1600); }catch(e){ alert("Não foi possível salvar. Verifique a internet."); } }
+async function salvaOff(novo){ try{ await DB.salvarOff(novo); const s=$("#salvo"); s.classList.add("on"); clearTimeout(s._t); s._t=setTimeout(()=>s.classList.remove("on"),1600); }catch(e){ alert(ERRO(e)); } }
 function mostra(v){ VIEW=v; $("#itens").style.display=v==="itens"?"block":"none"; $$(".kpis,.tabs,.cols,.fins").forEach(e=>e.style.display=v==="itens"?"none":""); $("#bItens").classList.toggle("on",v==="itens"); if(v==="itens"&&!CAT.length) carregaCatalogo(); }
 $("#bItens").onclick=()=>mostra(VIEW==="itens"?"pedidos":"itens"); $("#iVolta").onclick=()=>mostra("pedidos");
 $("#iBusca").oninput=desenhaItens;
@@ -463,7 +468,7 @@ function desenhaLoja(){ const b=$("#bLoja"); b.className="tb "+(LOJA_ABERTA===nu
 function ligaLoja(){ LOJAoff&&LOJAoff(); LOJAoff=DB.ouvirLoja(o=>{ LOJA_ABERTA=o.aberto!==false; desenhaLoja(); }); }
 $("#bLoja").onclick=async()=>{ if(LOJA_ABERTA===null) return; const novo=!LOJA_ABERTA, b=$("#bLoja"); b.disabled=true;
   try{ await DB.salvarAberto(novo); const s=$("#salvo"); s.textContent=novo?"🟢 Loja aberta: o cardápio já aceita pedidos":"🔴 Loja fechada: o cardápio mostra FECHADO"; s.classList.add("on"); clearTimeout(s._t); s._t=setTimeout(()=>{ s.classList.remove("on"); s.textContent="✔ Cardápio atualizado"; },2200); }
-  catch(e){ alert("Não foi possível mudar. Verifique a internet."); } b.disabled=false; };
+  catch(e){ alert(ERRO(e)); } b.disabled=false; };
 
 /* ---------- WhatsApp do entregador ---------- */
 const EK="painel_entregador_"+LOJA_ID;
@@ -507,7 +512,7 @@ document.addEventListener("click",async e=>{ const b=e.target.closest("button");
   if(d.pr){ const p=PED.find(x=>x.id===d.pr); p&&imprimir(p); return; }
   if(d.zap){ const p=PED.find(x=>x.id===d.zap); p&&enviaZap(p); return; }
   if(d.st){ if(d.st==="cancelado"&&!confirm("Cancelar este pedido? O cliente verá o pedido como cancelado.")) return;
-    b.disabled=true; try{ await DB.status(d.id,d.st); if(d.st==="preparo"){ const p=PED.find(x=>x.id===d.id); if(p&&!p._imp){ p._imp=1; } } }catch(err){ alert("Não foi possível atualizar. Verifique a internet."); b.disabled=false; } return; }
+    b.disabled=true; try{ await DB.status(d.id,d.st); if(d.st==="preparo"){ const p=PED.find(x=>x.id===d.id); if(p&&!p._imp){ p._imp=1; } } }catch(err){ alert(ERRO(err)); b.disabled=false; } return; }
   if(b.id==="bTeste"){ const n=["Ana","Bruno","Carla","Diego"][Math.floor(Math.random()*4)], t=Date.now();
     await DB.criar({loja:LOJA_ID,num:novoNumero(),dia:hojeISO(),criado:t,status:"recebido",hist:{recebido:t},cliente:{nome:n+" (teste)",tel:"(92) 99999-0000"},modo:"entrega",
       end:{"rua": "Av. Beira Rio", "num": "137", "bairro": "Coroado", "comp": "", "ref": "", "loc": ""},itens:[{"n": "X-Salada", "det": [], "q": 2, "p": 13}, {"n": "Pizza Grande", "det": ["Sabores: Calabresa e Mista"], "q": 1, "p": 60}, {"n": "Refrigerante 1 L", "det": [], "q": 1, "p": 8}],
@@ -516,3 +521,4 @@ document.addEventListener("click",async e=>{ const b=e.target.closest("button");
 </script>
 </body>
 </html>
+
