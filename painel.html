@@ -90,6 +90,12 @@ a.tb{color:var(--tx)}
 .fl{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--ln);font-size:13.5px}.fl:last-child{border:0}
 .fl span:last-child{color:var(--mu)}
 #somBar{display:none;margin:0 16px 10px;padding:12px 14px;border-radius:14px;background:#6e0609;color:#fff3d6;font-weight:700;font-size:14px;align-items:center;gap:10px}
+#toque{position:fixed;inset:0;z-index:70;display:none;place-items:center;background:rgba(13,5,5,.88);backdrop-filter:blur(4px);cursor:pointer;text-align:center;padding:20px}
+#toque.on{display:grid}#toque div{padding:28px 26px;border-radius:24px;background:var(--pn);border:2px solid var(--y);box-shadow:0 30px 60px rgba(0,0,0,.6);max-width:380px}
+#toque b{display:block;font-size:64px;animation:sino 1s ease-in-out infinite}#toque span{display:block;font-weight:800;font-size:20px;color:var(--y2);margin-top:8px}#toque small{display:block;color:var(--mu);margin-top:8px;font-size:13.5px}
+#toque.urg div{border-color:#ef4444;animation:urg .8s ease-in-out infinite}#toque.urg span:after{content:" · NOVO PEDIDO!";color:#fca5a5}
+@keyframes sino{0%,100%{transform:rotate(0)}25%{transform:rotate(-18deg)}75%{transform:rotate(18deg)}}@keyframes urg{50%{box-shadow:0 0 0 10px rgba(239,68,68,.35)}}
+body.alerta .top{animation:topA 1s ease-in-out infinite}@keyframes topA{50%{background:rgba(160,10,16,.92)}}
 #somBar button{margin-left:auto;padding:9px 14px;border-radius:10px;background:var(--y);color:#1a1205;font-weight:800}
 /* itens do dia */
 .vbtn.on{background:var(--y);color:#1a1205;border-color:var(--y)}
@@ -202,7 +208,7 @@ function mountLogo(el,o){ o=o||{}; el.classList.add("lg3d"); el.classList.add(o.
   <div class="lgi"></div>
   <h1 class="L">Painel de pedidos</h1><p>Lanche Paiva</p>
   <div class="lerr" id="lerr"></div>
-  <input id="lEmail" type="email" placeholder="E-mail" autocomplete="username">
+  <input id="lEmail" type="email" placeholder="E-mail" autocomplete="username" value="paivalanche@gmail.com">
   <input id="lSenha" type="password" placeholder="Senha" autocomplete="current-password">
   <button class="big" id="bEntrar">Entrar e ativar alertas 🔔</button>
   <div class="demo" id="demoInfo">🧪 <b>Modo demonstração</b><br>Use qualquer e-mail e a senha <b>1234</b>.<br>Abra o cardápio em outra aba deste mesmo navegador e faça um pedido: ele aparece aqui na hora.</div>
@@ -224,6 +230,7 @@ function mountLogo(el,o){ o=o||{}; el.classList.add("lg3d"); el.classList.add(o.
     <button class="tb" id="bTeste" style="display:none">🧪 Pedido de teste</button>
     <button class="tb" id="bSair">Sair</button>
   </div></div>
+  <div id="toque" role="button"><div><b>🔔</b><span>Toque aqui para ativar o som dos pedidos</span><small>O alarme toca sem parar até você aceitar o pedido</small></div></div>
   <div id="somBar">🔇 O navegador bloqueou o som. Toque para ativar os alertas de novos pedidos. <button id="bAtiva">Ativar som</button></div>
   <div class="kpis">
     <div class="kpi"><small>Pedidos hoje</small><b id="kQ">0</b></div>
@@ -362,16 +369,18 @@ function ac(){ try{ AC=AC||new (window.AudioContext||window.webkitAudioContext)(
 function toque(){ const a=ac(); if(!a||!SOM) return; const t=a.currentTime;
   [[988,0],[1319,.16],[988,.42],[1319,.58]].forEach(([f,d])=>{ const o=a.createOscillator(),g=a.createGain(); o.type="triangle"; o.frequency.value=f; o.connect(g); g.connect(a.destination);
     g.gain.setValueAtTime(.0001,t+d); g.gain.exponentialRampToValueAtTime(.5,t+d+.02); g.gain.exponentialRampToValueAtTime(.0001,t+d+.3); o.start(t+d); o.stop(t+d+.32); }); }
-function alarmeChk(){ const novos=PED.filter(p=>p.status==="recebido").length;
+function alarmeChk(){ const novos=PED.filter(p=>p.status==="recebido").length; document.body.classList.toggle("alerta",!!novos);
+  if(novos) try{ navigator.vibrate&&navigator.vibrate([400,200,400]); }catch(e){}
   document.title=(novos?`(${novos}) 🔔 NOVO PEDIDO · `:"")+"Painel · Lanche Paiva";
-  if(novos&&!alarme){ toque(); alarme=setInterval(toque,3500); } if(!novos&&alarme){ clearInterval(alarme); alarme=null; }
-  $("#somBar").style.display=novos&&AC&&AC.state!=="running"?"flex":"none"; }
+  if(novos&&!alarme){ toque(); alarme=setInterval(()=>{ toque(); try{ navigator.vibrate&&navigator.vibrate([400,200,400]); }catch(e){} },2200); } if(!novos&&alarme){ clearInterval(alarme); alarme=null; }
+  $("#somBar").style.display="none"; $("#toque").classList.toggle("on",somPreso()); $("#toque").classList.toggle("urg",!!novos); }
+let TOCOU=false; const somPreso=()=>AC?AC.state!=="running":!TOCOU;
 
 /* ---------- login ---------- */
 async function entrar(){ ac(); $("#lerr").textContent=""; try{ await DB.entrar($("#lEmail").value.trim(),$("#lSenha").value); iniciar(); }
   catch(e){ $("#lerr").textContent=DB.modo==="demo"?"Senha incorreta. No modo demonstração a senha é 1234.":"E-mail ou senha incorretos."; } }
 $("#bEntrar").onclick=entrar; $("#lSenha").onkeydown=e=>{ if(e.key==="Enter") entrar(); };
-function iniciar(){ $("#login").style.display="none"; $("#app").style.display="block";
+function iniciar(){ $("#login").style.display="none"; $("#app").style.display="block"; acorda(); $("#toque").classList.toggle("on",somPreso());
   $("#modoP").className="pill "+(DB.modo==="demo"?"demo":"on"); $("#modoP").textContent=DB.modo==="demo"?"🧪 Demonstração":"🟢 Online";
   $("#bTeste").style.display=DB.modo==="demo"?"":"none";
   if("Notification" in window&&Notification.permission==="default") try{Notification.requestPermission()}catch(e){}
@@ -380,10 +389,15 @@ function iniciar(){ $("#login").style.display="none"; $("#app").style.display="b
     if(PRIMEIRA){ PRIMEIRA=false; lista.forEach(p=>IMPRESSOS.add(p.id)); } else if(AUTO){ lista.filter(p=>p.status==="recebido"&&!IMPRESSOS.has(p.id)).forEach(filaImprime); }
     PED.filter(p=>!antes.has(p.id)&&p.status==="recebido"&&antes.size).forEach(p=>{ if(document.hidden&&"Notification" in window&&Notification.permission==="granted") try{ new Notification(`Novo pedido #${p.num}`,{body:`${p.cliente.nome} · ${R(p.total)}`,icon:undefined}); }catch(e){} });
     desenha(); alarmeChk(); }, ()=>{ $("#lerr").textContent="Sem permissão para ver os pedidos desta loja."; }); }
-DB.logado(ok=>{ if(ok) iniciar(); });
+setTimeout(()=>DB.logado(ok=>{ if(ok) iniciar(); }),0); /* depois de todo o script carregar */
 $("#bSair").onclick=async()=>{ await DB.sair(); location.reload(); };
 $("#bSom").onclick=()=>{ SOM=!SOM; ac(); $("#bSom").textContent=SOM?"🔔 Som ligado":"🔕 Som desligado"; if(SOM) toque(); };
 $("#bAtiva").onclick=()=>{ ac(); toque(); alarmeChk(); };
+/* tela de "toque para ativar o som" (o navegador só libera o som depois de um toque) */
+$("#toque").onclick=()=>{ TOCOU=true; ac(); toque(); acorda(); $("#toque").classList.remove("on"); setTimeout(alarmeChk,400); };
+/* mantém a tela do celular/tablet acesa enquanto o painel está aberto */
+let WL=null; async function acorda(){ try{ if("wakeLock" in navigator&&!WL){ WL=await navigator.wakeLock.request("screen"); WL.addEventListener("release",()=>{ WL=null; }); } }catch(e){} }
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"){ acorda(); alarmeChk(); } });
 $("#bAuto").onclick=()=>{ AUTO=!AUTO; try{ localStorage.setItem("painel_autoprint",AUTO?"1":"0"); }catch(e){} desenhaAuto(); if(AUTO) PED.forEach(p=>IMPRESSOS.add(p.id)); };
 desenhaAuto();
 
