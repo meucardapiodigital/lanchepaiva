@@ -33,12 +33,14 @@ input,textarea{font:inherit;color:inherit}
 .topbar{display:flex;justify-content:space-between;align-items:center;gap:10px}
 .st{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:999px;font-weight:800;font-size:13px;background:#e9f9ee;color:#166534;border:1px solid #b7ebc6}
 .st i{width:9px;height:9px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 0 rgba(34,197,94,.6);animation:pulse 1.8s infinite}
+body.longe .st i{animation:none}
 .st.off{background:#fdecec;color:#9f1239;border-color:#f6c2c7}.st.off i{background:var(--red);animation:none}
 @keyframes pulse{70%{box-shadow:0 0 0 8px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
 .zap{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border-radius:999px;background:#1fae5b;color:#fff;font-weight:800;font-size:13px;text-decoration:none;box-shadow:0 6px 16px rgba(31,174,91,.28)}
 .logo{position:relative;width:min(58vw,236px);margin:10px auto 0}
 .logo:before{content:"";position:absolute;inset:-14%;border-radius:50%;background:radial-gradient(closest-side,rgba(255,194,26,.45),rgba(255,194,26,0));z-index:-1}
-.logo img{display:block;width:100%;filter:drop-shadow(0 18px 24px rgba(140,60,0,.28));animation:float 6s ease-in-out infinite}
+.logo img{display:block;width:100%;filter:drop-shadow(0 18px 24px rgba(140,60,0,.28));animation:float 6s ease-in-out infinite;will-change:transform;backface-visibility:hidden}
+body.longe .logo img{animation-play-state:paused}
 @keyframes float{50%{transform:translateY(-6px) rotate(-1.5deg)}}
 .hero h1{margin-top:14px;font-size:clamp(32px,9vw,44px);line-height:1;color:var(--red2)}
 .tag{margin-top:6px;font-weight:700;color:var(--mut);font-size:15px}
@@ -49,8 +51,8 @@ input,textarea{font:inherit;color:inherit}
 .mesa b{display:block;font-family:"Lilita One";font-weight:400;font-size:26px;line-height:1.1}.mesa small{opacity:.92;font-size:13px}
 
 /* categorias */
-.bar{position:sticky;top:0;z-index:20;margin-top:14px;background:rgba(255,247,232,.88);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
-.cats{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;padding:10px 16px;max-width:760px;margin:0 auto}.cats::-webkit-scrollbar{display:none}
+.bar{position:sticky;top:0;z-index:20;margin-top:14px;background:#fff7e8;border-bottom:1px solid var(--line);box-shadow:0 6px 14px -10px rgba(120,60,0,.25)}
+.cats{position:relative;display:flex;gap:8px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;padding:10px 16px;max-width:760px;margin:0 auto}.cats::-webkit-scrollbar{display:none}
 .cat{flex:none;padding:9px 15px;border-radius:999px;font-weight:700;font-size:13.5px;white-space:nowrap;background:#fff;border:1px solid var(--line);color:#5b4434;transition:background .25s,color .25s,transform .2s}
 .cat.on{background:var(--red);color:#fff;border-color:var(--red);box-shadow:0 6px 14px rgba(215,20,30,.25)}
 
@@ -60,7 +62,7 @@ main{padding:8px 0 150px}
 .sh{position:relative;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;gap:6px;margin-bottom:12px;min-height:64px}
 .tg{display:inline-block;padding:7px 16px 5px;border-radius:12px;background:var(--yel);color:#4a1606;font-family:"Lilita One";font-size:26px;line-height:1.1;box-shadow:0 4px 0 var(--yel2)}
 .sh p{color:var(--mut);font-size:13.5px;font-weight:600;line-height:1.4}.sh p:empty{display:none}
-.sh img{position:absolute;right:-6px;bottom:-14px;width:112px;height:92px;object-fit:contain;filter:drop-shadow(0 10px 12px rgba(90,40,0,.25));pointer-events:none}
+.sh img{contain:paint;position:absolute;right:-6px;bottom:-14px;width:112px;height:92px;object-fit:contain;filter:drop-shadow(0 10px 12px rgba(90,40,0,.25));pointer-events:none}
 .sh.ci p{padding-right:110px}
 .pn{background:var(--card);border-radius:22px;box-shadow:var(--sh);border:1px solid var(--line);overflow:hidden}
 .it{display:flex;align-items:center;gap:12px;padding:14px 14px 14px 16px;border-top:1px solid var(--line);cursor:pointer;transition:background .2s}
@@ -92,7 +94,7 @@ main{padding:8px 0 150px}
 .sz span{display:block;margin-top:6px;font-weight:800;font-size:12.5px;color:#6b3d00;white-space:nowrap}
 
 /* entrada suave */
-.rv{opacity:0;transform:translateY(18px);transition:opacity .55s ease,transform .6s cubic-bezier(.2,1,.3,1)}
+.rv{opacity:0;transform:translateY(14px);transition:opacity .45s ease,transform .5s cubic-bezier(.2,1,.3,1)}
 .rv.in{opacity:1;transform:none}
 
 /* rodapé */
@@ -123,7 +125,7 @@ footer b{color:var(--red2)}
 .x{flex:none;width:38px;height:38px;border-radius:12px;background:#fff;border:1px solid var(--line);font-size:15px}
 .bd{overflow:auto;padding:6px 18px 22px}
 .pimg{display:grid;place-items:center;height:150px;margin:8px 0 2px;border-radius:20px;background:radial-gradient(60% 70% at 50% 60%,#fff,#ffeec9)}
-.pimg img{max-height:130px;max-width:70%;object-fit:contain;filter:drop-shadow(0 12px 14px rgba(90,40,0,.25));animation:float 5s ease-in-out infinite}
+.pimg img{max-height:130px;max-width:70%;object-fit:contain;filter:drop-shadow(0 12px 14px rgba(90,40,0,.25));animation:float 5s ease-in-out infinite;will-change:transform}
 .pimg .em{font-size:76px}
 .dsc{margin-top:10px;color:#5b4434;font-size:14.5px}
 .lb{display:block;margin:16px 0 8px;font-size:11.5px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:var(--red2)}
@@ -581,7 +583,10 @@ function confete(){ if(calmo) return; const cs=["#ffc21a","#d7141e","#fff","#f2a
     e.animate([{transform:"translate(-50%,-50%) rotate(0)",opacity:1},{transform:`translate(${Math.cos(ang)*v}px,${Math.sin(ang)*v+240}px) rotate(${720*Math.random()}deg)`,opacity:0}],{duration:1200+Math.random()*600,easing:"cubic-bezier(.2,.7,.4,1)"}).onfinish=()=>e.remove(); } }
 let rio; function revela(){ rio&&rio.disconnect(); if(!("IntersectionObserver" in window)||calmo){ $$(".rv").forEach(e=>e.classList.add("in")); return; }
   rio=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add("in"); rio.unobserve(e.target); } }),{rootMargin:"0px 0px -6% 0px"}); $$(".rv:not(.in)").forEach(e=>rio.observe(e)); }
-let cio; function obsCats(){ cio&&cio.disconnect(); cio=new IntersectionObserver(es=>es.forEach(e=>{ if(e.isIntersecting){ const k=e.target.id.slice(2); $$(".cat").forEach(c=>{ const on=c.dataset.go===k; c.classList.toggle("on",on); if(on) c.scrollIntoView({inline:"center",block:"nearest",behavior:calmo?"auto":"smooth"}); }); } }),{rootMargin:"-35% 0px -60% 0px"}); $$(".sec[id]").forEach(s=>cio.observe(s)); }
+let cio, catAt=""; function marcaCat(k){ if(k===catAt) return; catAt=k; const bar=$("#cats"); let alvo=null;
+  $$(".cat").forEach(c=>{ const on=c.dataset.go===k; c.classList.toggle("on",on); if(on) alvo=c; });
+  if(alvo){ const x=alvo.offsetLeft-(bar.clientWidth-alvo.offsetWidth)/2; requestAnimationFrame(()=>bar.scrollTo({left:Math.max(0,x),behavior:calmo?"auto":"smooth"})); } }
+function obsCats(){ cio&&cio.disconnect(); catAt=""; cio=new IntersectionObserver(es=>{ const v=es.filter(e=>e.isIntersecting); if(v.length) marcaCat(v[v.length-1].target.id.slice(2)); },{rootMargin:"-35% 0px -60% 0px"}); $$(".sec[id]").forEach(s=>cio.observe(s)); }
 
 /* ============ eventos ============ */
 document.addEventListener("click",e=>{ const t=e.target.closest("button,[data-close],[data-open],[data-pz]"); if(!t) return; const d=t.dataset;
@@ -604,6 +609,7 @@ document.addEventListener("click",e=>{ const t=e.target.closest("button,[data-cl
 });
 document.addEventListener("keydown",e=>{ if(e.key==="Escape") fecha(); });
 render(); status();
+try{ new IntersectionObserver(([e])=>document.body.classList.toggle("longe",!e.isIntersecting)).observe($(".hero")); }catch(e){}
 DB.ouvirLoja(o=>{ const f=o.aberto===false; if(f!==FECHADO){ const era=FECHADO; FECHADO=f; status(); if(era&&!f) toast("🟢 Abrimos! Já pode enviar o seu pedido"); } });
 DB.ouvirOff(o=>{ OFF=o||{}; const antes=CART.length; CART=CART.filter(l=>{ const it=ITENS.find(i=>i.id===l.id); return !(it&&OFF[it.key]) && !(it&&it.pz&&PZ.some(([n])=>OFF[pzKey(n)]&&l.det.some(d=>/^Sabor/.test(d)&&d.includes(n)))); }); if(CART.length!==antes){ lsS("paiva_cart2",CART); toast("Um item do seu pedido acabou hoje"); } render(); desenha(); });
 (()=>{ const a=lsG("paiva_pedido"); if(a&&a.id) acompanhar(a.id,false); })();
