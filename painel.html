@@ -386,8 +386,9 @@ const novoNumero = () => String(Math.floor(1000 + Math.random()*9000));
 const DB = (() => {
   /* ---------- MODO ONLINE (Firebase Firestore) ---------- */
   if (FIREBASE_CONFIG && window.firebase) {
-    firebase.initializeApp(FIREBASE_CONFIG);
-    const fs = firebase.firestore();
+    /* cada painel tem a sua própria sessão de login (não mistura lojas no mesmo navegador) */
+    window.FBAPP = firebase.initializeApp(FIREBASE_CONFIG, "painel_"+LOJA_ID);
+    const fs = FBAPP.firestore();
     const col = fs.collection("lojas").doc(LOJA_ID).collection("pedidos");
     const dispDoc = fs.collection("lojas").doc(LOJA_ID).collection("config").doc("disponibilidade");
     return {
@@ -396,9 +397,9 @@ const DB = (() => {
       ouvir(id, cb) { return col.doc(id).onSnapshot(s => cb(s.exists ? s.data() : null), () => cb(null)); },
       ouvirHoje(cb, erro) { return col.where("dia", "==", hojeISO()).onSnapshot(q => cb(q.docs.map(d => d.data())), erro); },
       status(id, st) { return col.doc(id).update({ status: st, ["hist." + st]: Date.now() }); },
-      entrar(email, senha) { return firebase.auth().signInWithEmailAndPassword(email, senha); },
-      sair() { return firebase.auth().signOut(); },
-      logado(cb) { return firebase.auth().onAuthStateChanged(u => cb(!!u, u && u.email)); },
+      entrar(email, senha) { return FBAPP.auth().signInWithEmailAndPassword(email, senha); },
+      sair() { return FBAPP.auth().signOut(); },
+      logado(cb) { return FBAPP.auth().onAuthStateChanged(u => cb(!!u, u && u.email)); },
       ouvirOff(cb) { return dispDoc.onSnapshot(s => cb((s.exists && s.data().off) || {}), () => cb({})); },
       salvarOff(off) { return dispDoc.set({ off, atualizado: Date.now() }); }
     };
@@ -434,7 +435,7 @@ const DB = (() => {
 })();
 
 /* ---- loja aberta/fechada (controlado pelo painel) ---- */
-(()=>{ if(DB.modo==="online"){ const d=firebase.firestore().collection("lojas").doc(LOJA_ID).collection("config").doc("loja");
+(()=>{ if(DB.modo==="online"){ const d=FBAPP.firestore().collection("lojas").doc(LOJA_ID).collection("config").doc("loja");
     DB.ouvirLoja=cb=>d.onSnapshot(s=>cb(s.exists?s.data():{}),()=>cb({}));
     DB.salvarAberto=v=>d.set({aberto:v,atualizado:Date.now()},{merge:true}); }
   else if(DB.modo==="demo"){ const K="demo_loja_"+LOJA_ID, subs=new Set();
@@ -490,7 +491,7 @@ function iniciar(){ $("#login").style.display="none"; $("#app").style.display="b
     PED.filter(p=>!antes.has(p.id)&&p.status==="recebido"&&antes.size).forEach(p=>{ if(document.hidden&&"Notification" in window&&Notification.permission==="granted") try{ new Notification(`Novo pedido #${p.num}`,{body:`${p.cliente.nome} · ${R(p.total)}`,icon:undefined}); }catch(e){} });
     desenha(); alarmeChk(); }, ()=>semPermissao()); }
 const ERRO=e=>e&&e.code==="permission-denied"?"Esta conta não tem permissão no painel do "+NOME_LOJA+". Saia e entre com o e-mail da loja.":"Não foi possível concluir. Verifique a internet e tente de novo.";
-async function semPermissao(){ const em=(firebase.auth&&firebase.auth().currentUser&&firebase.auth().currentUser.email)||"esta conta"; try{ await DB.sair(); }catch(e){}
+async function semPermissao(){ const em=(firebase.auth&&FBAPP.auth().currentUser&&FBAPP.auth().currentUser.email)||"esta conta"; try{ await DB.sair(); }catch(e){}
   $("#app").style.display="none"; $("#itens").style.display="none"; $("#toque").classList.remove("on"); $("#login").style.display=""; $("#lEmail").value="paivalanche@gmail.com"; $("#lSenha").value="";
   $("#lerr").textContent=`A conta ${em} não tem acesso ao painel do ${NOME_LOJA}. Entre com paivalanche@gmail.com.`; }
 setTimeout(()=>DB.logado(ok=>{ if(ok) iniciar(); }),0); /* depois de todo o script carregar */
@@ -630,7 +631,7 @@ document.addEventListener("click",e=>{ if(e.target.classList&&e.target.classList
 document.addEventListener("keydown",e=>{ if(e.key==="Escape") $$(".mdl.on").forEach(m=>m.classList.remove("on")); });
 
 /* ---- banco: atualizar um pedido e ler pedidos de outros dias ---- */
-(()=>{ if(DB.modo==="online"){ const col=firebase.firestore().collection("lojas").doc(LOJA_ID).collection("pedidos");
+(()=>{ if(DB.modo==="online"){ const col=FBAPP.firestore().collection("lojas").doc(LOJA_ID).collection("pedidos");
     DB.atualizar=(id,c)=>col.doc(id).update(c);
     DB.listarDia=async dia=>(await col.where("dia","==",dia).get()).docs.map(d=>d.data()); }
   else if(DB.modo==="demo"){ const K="demo_pedidos_"+LOJA_ID, ler=()=>{ try{ return JSON.parse(localStorage.getItem(K)||"[]"); }catch(e){ return []; } };
