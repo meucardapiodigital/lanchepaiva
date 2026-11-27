@@ -372,6 +372,9 @@ const MESA=(new URLSearchParams(location.search).get("mesa")||"").replace(/[^\w\
 const AD=[["Ovo",3],["Queijo",2.5],["Presunto",3],["Hambúrguer",2],["Hambúrguer artesanal",10],["Bacon",8],["Calabresa",8],["Salsicha",4],["Banana",10],["Cebola",2],["Maionese",2.5]];
 const G_AD={t:"Adicionais",o:AD,min:0,max:AD.length,h:"opcional · escolha quantos quiser"};
 const S=(n,v,d)=>({s:"sand",n,d,p:[["",v]],g:[G_AD]});
+/* combos e promoções (também aparecem no painel em "Itens do dia" para marcar esgotado) */
+const TURB=(o,v)=>({t:"Turbine seu lanche",o:[[o,v]],min:0,max:1,h:"opcional"});
+const CB=(n,v,d,x)=>({s:"combo",n,d,p:[["",v]],img:"burger",...(x||{})});
 const TAM=["Média","Grande","Família"];
 const PZ=[
  ["Calabresa","Molho, mussarela, calabresa, cebola, azeitona e orégano.",40,52,63],
@@ -389,6 +392,14 @@ const PZ=[
 const PZSEC="Sabores de Pizza", pzKey=n=>PZSEC+"|"+n;
 const SUCO=(n,a,b)=>({s:"suco",n:"Suco de "+n,p:[["500 ml",a],["1 litro",b]],g:[{t:"Adicional",o:[["Com leite",5]],min:0,max:1,h:"opcional"}]});
 const ITENS=[
+ CB("Combo Detone: 2 X-Salada",20,"2 X-Saladas por R$ 20,00. Turbine com Refri 1L + Batata-frita 200 g por + R$ 15,00.",{g:[TURB("Refri 1L + Batata-frita 200 g",15)]}),
+ CB("Combo Artesanal: 1 X-Salada Artesanal + Batata-frita + Bebida",25,"1 X-Salada Artesanal, batata-frita e bebida. Turbine com mais batata-frita 100 g por + R$ 1,00.",{g:[TURB("Batata-frita 100 g",1)]}),
+ CB("Combo 4 Kikão + Refri 1L (Pepsi)",40,"4 Kikões e 1 refrigerante Pepsi de 1 litro.",{img:"hotdog"}),
+ CB("Combo 3 X-Salada + Refri 1L (Baré)",40,"3 X-Saladas e 1 refrigerante Baré de 1 litro."),
+ CB("Combo 3 X-Salada + Refri 1L (Pepsi)",45,"3 X-Saladas e 1 refrigerante Pepsi de 1 litro."),
+ CB("Combo 4 X-Salada + Refri 1,5L (Tuchaua)",50,"4 X-Saladas e 1 refrigerante Tuchaua de 1,5 litro."),
+ CB("Combo 4 X-Salada + Refri 1L (Pepsi)",55,"4 X-Saladas e 1 refrigerante Pepsi de 1 litro."),
+ CB("Combo 5 X-Salada + Refri 2L (Coca-Cola)",75,"5 X-Saladas e 1 refrigerante Coca-Cola de 2 litros."),
  S("X-Coroadão",35,"Salada, 2 hambúrgueres, 3 bacon, 3 calabresa, ovo, 2 queijos e 2 presuntos."),
  S("X-Tudo",30,"Salada, hambúrguer, salsicha, bacon, calabresa, ovo, queijo e presunto."),
  S("X-Bacon",20,"Salada, hambúrguer, bacon, queijo e presunto."),
@@ -397,7 +408,7 @@ const ITENS=[
  S("X-Banana",18,"Salada, hambúrguer, banana, queijo e presunto."),
  S("X-Salada",13,"Salada, hambúrguer, ovo, queijo e presunto."),
  S("X-Salada Especial",15,"Salada, 2 hambúrgueres, ovo, queijo e presunto."),
- S("X-Salada Artesanal",19,"Carne artesanal, salada, ovo, presunto e queijo."),
+ {...S("X-Salada Artesanal",19,"Carne artesanal, salada, ovo, presunto e queijo."),g:[G_AD,TURB("Batata-frita 100 g",1)]},
  S("X-Maionese",10,"Salada, hambúrguer, queijo e presunto."),
  S("X-Burguer",8,"Salada, hambúrguer e queijo."),
  S("Hambúrguer",6,"Salada e hambúrguer."),
@@ -425,7 +436,7 @@ const ITENS=[
  {s:"salada",n:"Salada de Frutas Completa",d:"Com complemento à sua escolha.",p:[["300 ml",14],["500 ml",16]],g:[{t:"Complemento",o:[["Farinha láctea",0],["Neston",0],["Granola",0]],min:1,max:1}]},
  ...[["Refrigerante KS",5],["Refrigerante lata",6],["Refrigerante 1 litro",8],["Refrigerante 1,5 litro",10],["Refrigerante 2 litros",15],["Água pequena",3],["Água grande",5]].map(([n,v])=>({s:"refri",n,p:[["",v]]}))
 ];
-const SECOES=[["sand","Sanduíches","Feitos na hora. Toque para colocar adicionais.","burger"],["pizza","Pizzas","Média 6 fatias · Grande 8 · Família 12","pizza"],["batata","Batata Frita","","batata"],
+const SECOES=[["combo","Combos e Promoções","Mais lanche por menos. Diga o sabor do refrigerante nas observações.","burger"],["sand","Sanduíches","Feitos na hora. Toque para colocar adicionais.","burger"],["pizza","Pizzas","Média 6 fatias · Grande 8 · Família 12","pizza"],["batata","Batata Frita","","batata"],
  ["refeicao","Refeições / Grelhados","Acompanham arroz, salada, batata frita, feijão e farofa.",""],["sopa","Sopas","",""],["suco","Sucos","500 ml ou 1 litro · adicional de leite R$ 5,00","sucos"],
  ["vita","Vitaminas","Banana, abacate, mamão, mista e guaraná em pó.",""],["salada","Salada de Frutas","",""],["refri","Refrigerantes e Água","Diga o sabor do refrigerante nas observações.","refri"]];
 const EMO={refeicao:"🍽️",sopa:"🍲",vita:"🥤",salada:"🍓"};
