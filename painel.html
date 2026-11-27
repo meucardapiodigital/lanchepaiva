@@ -201,6 +201,10 @@ body.claro .lgimg img{filter:drop-shadow(0 5px 9px rgba(80,40,0,.3))}
 .cu.pg{opacity:.5;cursor:default}.cu.pg .cn b{text-decoration:line-through}
 .cn{flex:1;min-width:0}.cn b{display:block;font-size:14.5px}.cn small{display:block;color:var(--mu);font-size:12px}
 .cv{font-weight:900;white-space:nowrap}
+.cgr{display:flex;align-items:center;gap:10px;margin:12px 0 6px;padding:9px 12px;border-radius:14px;background:rgba(242,183,5,.12);border:1px solid var(--y)}
+.cgr button{flex:none;padding:8px 10px;border-radius:10px;border:1px solid var(--ln);font-weight:800;font-size:12.5px;background:#1d0a08}
+body.claro .cgr button{background:#fff}
+.cu.cuc{margin-left:14px}
 .csum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0 10px}
 .csum div{padding:10px;border-radius:14px;background:rgba(242,183,5,.08);border:1px solid var(--ln);text-align:center}
 .csum small{display:block;color:var(--mu);font-size:11.5px;font-weight:700}.csum b{font-size:18px;color:var(--y2);white-space:nowrap}
@@ -657,11 +661,38 @@ const ETQ={recebido:"Recebido",preparo:"Em preparo",pronto:"Pronto",enviado:"Env
 
 /* ---- 🧮 dividir conta ---- */
 let CALC=null;
-function abreCalc(p){ const u=[]; p.itens.forEach(i=>{ for(let k=0;k<i.q;k++) u.push({l:i.n+(i.q>1?` (${k+1} de ${i.q})`:""),d:(i.det||[]).join(" · "),v:+i.p||0,sel:false,pago:false}); });
+/* ---- combos: cada lanche do combo vira uma caixinha separada (ex.: "Combo 4x Salada" → 1x, 2x, 3x, 4x Salada) ---- */
+const ehCombo=i=>/\b(combo|promo\w*|kit)\b|\d+\s*[x×]\s*\S/i.test(String(i.n||""));
+const SEP_COMBO=/\s*(?:\+|,|;|\n|\s+e\s+)\s*/i;
+function linhaCombo(s){ s=String(s||"").trim(); if(!s) return null; const m=s.match(/^(\d{1,2})\s*(?:[x×](?=[\s\d])|un(?:id)?\w*\.?)?\s*(.+)$/i);
+  return m?{q:+m[1],n:m[2].trim(),num:true}:{q:1,n:s,num:false}; }
+function partesCombo(i){ const tot=l=>l.reduce((a,x)=>a+x.q,0);
+  /* 1º lê o nome do combo (ex.: "Combo Família: 4 X-Salada + 1 Refrigerante 1 litro") */
+  const nome=String(i.n||"").replace(/\s*(por\s*)?r\$\s*[\d.,]+.*$/i,"").replace(/^.*?\b(combo|promo\w*|kit)\b[^\d+]*/i,"");
+  let l=nome.split(SEP_COMBO).map(linhaCombo).filter(x=>x&&x.q>0&&x.n);
+  if(tot(l)>=2) return l;
+  /* 2º se o nome não diz, procura nos detalhes linhas com quantidade (ex.: "4x X-Salada") */
+  l=[]; (i.det||[]).forEach(d=>String(d).split(SEP_COMBO).forEach(s=>{ const x=linhaCombo(s.replace(/^[^:\d]{0,25}:\s*/,"")); if(x&&x.num&&x.q>0) l.push(x); }));
+  return tot(l)>=2?l:null; }
+/* preço de cada lanche no cardápio, para repartir o valor do combo de forma justa */
+const CAT_PRECO=(CATALOGO.itens||[]).map(x=>({k:nk(x.nome).replace(/[^a-z0-9]/g,""),v:parseFloat(String(x.preco||"").split("/")[0].replace(/\./g,"").replace(",","."))||0})).filter(x=>x.k&&x.v);
+function precoCat(nome){ const n=nk(nome).replace(/[^a-z0-9]/g,""); if(!n) return 0;
+  const ex=CAT_PRECO.find(x=>x.k===n); if(ex) return ex.v;
+  const a=CAT_PRECO.filter(x=>n.includes(x.k)).sort((p,q)=>q.k.length-p.k.length)[0]; if(a) return a.v;
+  const b=CAT_PRECO.filter(x=>x.k.includes(n)).sort((p,q)=>p.k.length-q.k.length)[0]; return b?b.v:0; }
+/* reparte o valor em centavos: proporcional ao cardápio; se algum lanche não for achado, divide igual. A soma fecha exatamente no preço do combo. */
+function rateia(total,pesos){ const c=Math.round(total*100), w=pesos.every(p=>p>0)?pesos:pesos.map(()=>1), sw=w.reduce((a,b)=>a+b,0); let r=c;
+  return w.map((p,i)=>{ const v=i===w.length-1?r:Math.round(c*p/sw); r-=v; return v/100; }); }
+function abreCalc(p){ const u=[]; let g=0; p.itens.forEach(i=>{ const pc=ehCombo(i)?partesCombo(i):null;
+    for(let k=0;k<i.q;k++){ const tag=i.q>1?` (${k+1} de ${i.q})`:"";
+      if(pc){ const un=[]; pc.forEach(x=>{ for(let j=1;j<=x.q;j++) un.push({n:x.n,j,q:x.q}); }); const vs=rateia(+i.p||0,un.map(x=>precoCat(x.n))); g++;
+        un.forEach((x,t)=>u.push({l:`${x.j}x ${x.n}`,d:x.q>1?`${x.j} de ${x.q} do combo`:"do combo",v:vs[t],sel:false,pago:false,g,
+          gt:t===0?{n:i.n+tag,d:(i.det||[]).join(" · "),v:+i.p||0}:null})); }
+      else u.push({l:i.n+tag,d:(i.det||[]).join(" · "),v:+i.p||0,sel:false,pago:false}); } });
   if(p.taxa) u.push({l:"Taxa de entrega",d:"",v:+p.taxa,sel:false,pago:false});
   CALC={p,u,pes:1}; $("#cNum").textContent=p.num; desenhaCalc(); $("#mCalc").classList.add("on"); }
 function desenhaCalc(){ const c=CALC, soma=f=>c.u.filter(f).reduce((a,x)=>a+x.v,0), tot=soma(()=>true), sel=soma(x=>x.sel), pago=soma(x=>x.pago), falta=tot-pago;
-  $("#cLista").innerHTML=c.u.map((x,i)=>`<label class="cu${x.pago?" pg":""}${x.sel?" on":""}"><input type="checkbox" data-cu="${i}"${x.sel?" checked":""}${x.pago?" disabled":""}><span class="cn"><b>${esc(x.l)}</b>${x.d?`<small>${esc(x.d)}</small>`:""}</span><span class="cv">${x.pago?"pago ✔":R(x.v)}</span></label>`).join("");
+  $("#cLista").innerHTML=c.u.map((x,i)=>`${x.gt?`<div class="cgr"><span class="cn"><b>🍔 ${esc(x.gt.n)} · ${R(x.gt.v)}</b>${x.gt.d?`<small>${esc(x.gt.d)}</small>`:""}</span><button data-cg="${x.g}">☑️ Combo todo</button></div>`:""}<label class="cu${x.g?" cuc":""}${x.pago?" pg":""}${x.sel?" on":""}"><input type="checkbox" data-cu="${i}"${x.sel?" checked":""}${x.pago?" disabled":""}><span class="cn"><b>${esc(x.l)}</b>${x.d?`<small>${esc(x.d)}</small>`:""}</span><span class="cv">${x.pago?"pago ✔":R(x.v)}</span></label>`).join("");
   const base=sel||falta;
   $("#cSel").textContent=R(sel); $("#cFalta").textContent=R(falta); $("#cTot").textContent=R(tot); $("#cPes").textContent=c.pes;
   $("#cBase").textContent=sel?"Dividir o selecionado por":"Dividir o que falta por"; $("#cCada").textContent=R(base/c.pes);
@@ -742,6 +773,7 @@ document.addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b
   if(d.hz){ const p=achar(d.hz); p&&enviaZap(p); return; }
   if(d.mgo){ const m=motos().find(x=>x.id===d.mgo); if(m&&MZ) mandaMoto(MZ,m); return; }
   if(d.mdel){ const m=motos().find(x=>x.id===d.mdel); if(m&&confirm(`Excluir ${m.nome} da lista de motoboys? As entregas que ele já fez continuam salvas nos pedidos.`)){ salvaMotos(motos().filter(x=>x.id!==d.mdel)); desenhaMM(); if(VIEW==="moto") desenhaMoto(); } return; }
+  if(d.cg&&CALC){ const l=CALC.u.filter(x=>x.g===+d.cg&&!x.pago), marca=l.some(x=>!x.sel); l.forEach(x=>x.sel=marca); desenhaCalc(); return; }
   if(d.cp&&CALC){ CALC.pes=Math.max(1,Math.min(30,CALC.pes+ +d.cp)); desenhaCalc(); return; }
 });
 </script>
