@@ -202,7 +202,8 @@ body.claro .lgimg img{filter:drop-shadow(0 5px 9px rgba(80,40,0,.3))}
 .cn{flex:1;min-width:0}.cn b{display:block;font-size:14.5px}.cn small{display:block;color:var(--mu);font-size:12px}
 .cv{font-weight:900;white-space:nowrap}
 .cgr{display:flex;align-items:center;gap:10px;margin:12px 0 6px;padding:9px 12px;border-radius:14px;background:rgba(242,183,5,.12);border:1px solid var(--y)}
-.cgr button{flex:none;padding:8px 10px;border-radius:10px;border:1px solid var(--ln);font-weight:800;font-size:12.5px;background:#1d0a08}
+.cgr{flex-wrap:wrap}.cgr .cn{min-width:180px}.cgr .cst button{width:32px;height:32px;padding:0;font-size:18px}
+.cgr>button{flex:none;padding:8px 10px;border-radius:10px;border:1px solid var(--ln);font-weight:800;font-size:12.5px;background:#1d0a08}
 body.claro .cgr button{background:#fff}
 .cu.cuc{margin-left:14px}
 .csum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0 10px}
@@ -687,19 +688,19 @@ function rateia(total,pesos){ const c=Math.round(total*100), w=pesos.every(p=>p>
 /* opções de "Turbine seu lanche" do cardápio: viram caixinhas separadas com o valor delas */
 const TURBINE={[nk("Refri 1L + Batata-frita 200 g")]:[["Refri 1L",8],["Batata-frita 200 g",7]],[nk("Batata-frita 100 g")]:[["Batata-frita 100 g",1]]};
 function extrasDe(i){ const l=[]; (i.det||[]).forEach(d=>{ const m=String(d).match(/^turbin\w*[^:]*:\s*(.+)$/i); if(m&&TURBINE[nk(m[1])]) l.push(...TURBINE[nk(m[1])]); }); return l; }
+/* combo inteiro no topo e, embaixo, o valor total dividido em partes iguais (ex.: 4 Kikão + 1 Refri = 5 partes de R$ 8,00) */
+function partesValor(g,tot,n,gt){ return rateia(tot,Array(n).fill(1)).map((v,j)=>({l:`Parte ${j+1} de ${n}`,d:"valor do combo dividido igual",v,sel:false,pago:false,g,gt:j===0?{...gt,np:n}:null})); }
 function abreCalc(p){ const u=[]; let g=0; p.itens.forEach(i=>{ const pc=ehCombo(i)?partesCombo(i):null;
     for(let k=0;k<i.q;k++){ const tag=i.q>1?` (${k+1} de ${i.q})`:"";
       const ex=extrasDe(i), vex=ex.reduce((a,x)=>a+x[1],0), base=Math.max(0,(+i.p||0)-vex);
-      if(pc){ const un=[]; pc.forEach(x=>{ for(let j=1;j<=x.q;j++) un.push({n:x.n,j,q:x.q}); }); const vs=rateia(base,un.map(x=>precoCat(x.n))); g++;
-        un.forEach((x,t)=>u.push({l:`${x.j}x ${x.n}`,d:x.q>1?`${x.j} de ${x.q} do combo`:"do combo",v:vs[t],sel:false,pago:false,g,
-          gt:t===0?{n:i.n+tag,d:(i.det||[]).join(" · "),v:+i.p||0}:null}));
-        ex.forEach(([n,v])=>u.push({l:`1x ${n}`,d:"turbine do combo",v,sel:false,pago:false,g})); }
+      if(pc){ g++; const n=pc.reduce((a,x)=>a+x.q,0), itens=pc.map(x=>`${x.q}x ${x.n}`).join(" + ");
+        u.push(...partesValor(g,+i.p||0,n,{n:i.n+tag,d:[itens,...(i.det||[])].join(" · "),v:+i.p||0})); }
       else { u.push({l:i.n+tag,d:(i.det||[]).join(" · "),v:base,sel:false,pago:false});
         ex.forEach(([n,v])=>u.push({l:`1x ${n}`,d:"turbine · "+i.n+tag,v,sel:false,pago:false})); } } });
   if(p.taxa) u.push({l:"Taxa de entrega",d:"",v:+p.taxa,sel:false,pago:false});
   CALC={p,u,pes:1}; $("#cNum").textContent=p.num; desenhaCalc(); $("#mCalc").classList.add("on"); }
 function desenhaCalc(){ const c=CALC, soma=f=>c.u.filter(f).reduce((a,x)=>a+x.v,0), tot=soma(()=>true), sel=soma(x=>x.sel), pago=soma(x=>x.pago), falta=tot-pago;
-  $("#cLista").innerHTML=c.u.map((x,i)=>`${x.gt?`<div class="cgr"><span class="cn"><b>🍔 ${esc(x.gt.n)} · ${R(x.gt.v)}</b>${x.gt.d?`<small>${esc(x.gt.d)}</small>`:""}</span><button data-cg="${x.g}">☑️ Combo todo</button></div>`:""}<label class="cu${x.g?" cuc":""}${x.pago?" pg":""}${x.sel?" on":""}"><input type="checkbox" data-cu="${i}"${x.sel?" checked":""}${x.pago?" disabled":""}><span class="cn"><b>${esc(x.l)}</b>${x.d?`<small>${esc(x.d)}</small>`:""}</span><span class="cv">${x.pago?"pago ✔":R(x.v)}</span></label>`).join("");
+  $("#cLista").innerHTML=c.u.map((x,i)=>`${x.gt?`<div class="cgr"><span class="cn"><b>🍔 ${esc(x.gt.n)} · ${R(x.gt.v)}</b>${x.gt.d?`<small>${esc(x.gt.d)}</small>`:""}</span><span class="cst"><button data-cgp="${x.g}|-1" aria-label="Menos uma parte">−</button><b>${x.gt.np}</b><button data-cgp="${x.g}|1" aria-label="Mais uma parte">+</button></span><button data-cg="${x.g}">☑️ Combo todo</button></div>`:""}<label class="cu${x.g?" cuc":""}${x.pago?" pg":""}${x.sel?" on":""}"><input type="checkbox" data-cu="${i}"${x.sel?" checked":""}${x.pago?" disabled":""}><span class="cn"><b>${esc(x.l)}</b>${x.d?`<small>${esc(x.d)}</small>`:""}</span><span class="cv">${x.pago?"pago ✔":R(x.v)}</span></label>`).join("");
   const base=sel||falta;
   $("#cSel").textContent=R(sel); $("#cFalta").textContent=R(falta); $("#cTot").textContent=R(tot); $("#cPes").textContent=c.pes;
   $("#cBase").textContent=sel?"Dividir o selecionado por":"Dividir o que falta por"; $("#cCada").textContent=R(base/c.pes);
@@ -780,6 +781,9 @@ document.addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b
   if(d.hz){ const p=achar(d.hz); p&&enviaZap(p); return; }
   if(d.mgo){ const m=motos().find(x=>x.id===d.mgo); if(m&&MZ) mandaMoto(MZ,m); return; }
   if(d.mdel){ const m=motos().find(x=>x.id===d.mdel); if(m&&confirm(`Excluir ${m.nome} da lista de motoboys? As entregas que ele já fez continuam salvas nos pedidos.`)){ salvaMotos(motos().filter(x=>x.id!==d.mdel)); desenhaMM(); if(VIEW==="moto") desenhaMoto(); } return; }
+  if(d.cgp&&CALC){ const [gs,dl]=d.cgp.split("|"), gg=+gs, ini=CALC.u.findIndex(x=>x.g===gg), grp=CALC.u.filter(x=>x.g===gg); if(ini<0) return;
+    if(grp.some(x=>x.pago)){ toastS("Já tem parte paga neste combo. Toque em ↺ Recomeçar para mudar as partes.",2600); return; }
+    const gt=grp[0].gt, n=Math.max(1,Math.min(20,gt.np+ +dl)); CALC.u.splice(ini,grp.length,...partesValor(gg,gt.v,n,gt)); desenhaCalc(); return; }
   if(d.cg&&CALC){ const l=CALC.u.filter(x=>x.g===+d.cg&&!x.pago), marca=l.some(x=>!x.sel); l.forEach(x=>x.sel=marca); desenhaCalc(); return; }
   if(d.cp&&CALC){ CALC.pes=Math.max(1,Math.min(30,CALC.pes+ +d.cp)); desenhaCalc(); return; }
 });
