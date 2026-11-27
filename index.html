@@ -196,6 +196,12 @@ footer b{color:var(--red2)}
 .trkr small{display:block;margin-top:6px;color:var(--mut)}
 .trkz{display:block;margin-top:10px;text-align:center;padding:13px;border-radius:14px;background:#1fae5b;color:#fff;font-weight:800;text-decoration:none;font-size:14px;width:100%}
 .trkz.alt{background:var(--red)}
+.trkz.ed{background:#ea580c}
+.altst{margin-top:10px;padding:10px 12px;border-radius:12px;font-size:13.5px;font-weight:700;background:#fff1c2;color:#6a3a00;line-height:1.4}.altst.ok{background:#dcfce7;color:#14532d}.altst.no{background:#fee2e2;color:#7f1d1d}
+#altBar{position:fixed;left:50%;bottom:86px;z-index:40;transform:translate(-50%,240%);width:min(560px,calc(100% - 20px));display:flex;gap:10px;align-items:center;padding:10px 12px;border-radius:16px;background:#1d0a08;color:#fff3d6;box-shadow:0 10px 30px rgba(0,0,0,.35);transition:transform .3s;font-size:13px;line-height:1.35}
+#altBar.on{transform:translate(-50%,0)}body.altm #trkBtn{display:none}#altBar b{color:#ffd54a}#altBar span{flex:1}#altBar button{flex:none;padding:9px 12px;border-radius:10px;background:#5a1418;color:#fff;font-weight:800;font-size:12.5px}
+#altInfo{display:none;margin-bottom:10px;padding:10px 12px;border-radius:12px;background:#fff1c2;color:#6a3a00;font-size:13px;font-weight:700;line-height:1.4}
+#mC.alt #altInfo{display:block}#mC.alt .bd>:not(#lista):not(.tot):not(#bSend):not(.err):not(#altInfo){display:none}
 .tnote{margin-top:10px;padding:10px 12px;border-radius:12px;background:#fff4d6;font-size:12.5px;color:#5a4214;text-align:center}
 .toast{position:fixed;left:50%;top:14px;z-index:80;transform:translate(-50%,-160%);visibility:hidden;padding:12px 18px;border-radius:14px;background:var(--ink);color:#fff;font-weight:700;font-size:14px;transition:transform .3s;box-shadow:0 10px 24px rgba(0,0,0,.2);max-width:92vw}
 .toast.on{transform:translate(-50%,0);visibility:visible}
@@ -233,7 +239,7 @@ footer b{color:var(--red2)}
 <div class="ov" id="mC" role="dialog" aria-modal="true" aria-label="Seu pedido"><div class="bg" data-close></div><div class="sheet">
   <div class="hd"><h3>Seu pedido</h3><button class="x" data-close aria-label="Fechar">✕</button></div>
   <div class="bd">
-    <div id="lista"></div>
+    <div id="altInfo"></div><div id="lista"></div>
     <label class="lb">Como quer receber?</label>
     <div class="opts o3"><button class="op" data-mod="entrega">🛵 Entrega</button><button class="op" data-mod="retirada">🏃 Retirar</button><button class="op" data-mod="mesa">🍽️ Mesa</button></div>
     <label class="lb" for="fNome">Seu nome</label><input class="in2" id="fNome" placeholder="Nome completo" autocomplete="name">
@@ -262,6 +268,7 @@ footer b{color:var(--red2)}
 </div></div>
 
 <div class="toast" id="toast" role="status"></div>
+<div id="altBar" role="status"><span id="altBarT"></span><button id="altSair">Cancelar alteração</button></div>
 <button id="trkBtn" aria-label="Acompanhar pedido"><span class="dot"></span><span id="trkBtnT">Acompanhar pedido</span></button>
 <div class="ov" id="mT" role="dialog" aria-modal="true" aria-labelledby="trkT"><div class="bg" data-close></div><div class="sheet">
   <div class="hd"><h3 id="trkT">Seu pedido</h3><button class="x" data-close aria-label="Fechar">✕</button></div>
@@ -513,12 +520,13 @@ function simples(id,dir){ const it=ITENS.find(i=>i.id===id), ex=CART.find(l=>l.k
 
 /* ============ pedido ============ */
 let MOD=MESA?"mesa":"entrega", PAG="Pix", LOC="", ENVIANDO=false;
-function desenha(){ CART=CART.filter(l=>ITENS.some(i=>i.id===l.id));
+var ALT=null, ALTR=null, ALToff=null; /* alteração de pedido pelo cliente */
+function desenha(){ CART=CART.filter(l=>l.alt?!!ALT:ITENS.some(i=>i.id===l.id));
   const sub=CART.reduce((a,l)=>a+l.p*l.q,0), n=CART.reduce((a,l)=>a+l.q,0);
   $("#fab").classList.toggle("show",CART.length>0); $("#fN").textContent=n; $("#fT").textContent=R(sub); $("#fS").textContent=`${n} ${n===1?"item":"itens"}`;
   $("#lista").innerHTML=CART.map((l,i)=>`<div class="li"><div class="i"><b>${esc(l.n)}</b>${l.det.map(d=>`<small>${esc(d)}</small>`).join("")}<span class="v">${R(l.p*l.q)}</span></div><div class="stp"><button data-cq="${i}|-1" aria-label="Menos">−</button><span>${l.q}</span><button data-cq="${i}|1" aria-label="Mais">+</button></div></div>`).join("")||`<p class="hint" style="padding:16px">Seu pedido está vazio.</p>`;
   $("#tot").textContent=R(sub); document.body.classList.toggle("temcart",CART.length>0);
-  const b=$("#bSend"); if(!ENVIANDO){ b.disabled=!ABERTO||!CART.length; b.lastElementChild.textContent=ABERTO?"Enviar pedido":"🔒 Fechado no momento"; }
+  const b=$("#bSend"); if(!ENVIANDO){ b.disabled=ALT?!CART.length:(!ABERTO||!CART.length); b.lastElementChild.textContent=ALT?"Enviar alteração":ABERTO?"Enviar pedido":"🔒 Fechado no momento"; }
   if(!CART.length&&$("#mC").classList.contains("on")) fecha(); }
 function desenhaEnd(){ $$("[data-mod]").forEach(b=>b.classList.toggle("on",b.dataset.mod===MOD)); $("#bxEnt").classList.toggle("on",MOD==="entrega"); $("#bxRet").classList.toggle("on",MOD==="retirada");
   $("#bxMesa").classList.toggle("on",MOD==="mesa"); $("#bxTel").style.display=MOD==="mesa"?"none":""; $(".save").style.display=MOD==="mesa"?"none":"";
@@ -576,11 +584,40 @@ function desenhaTrk(){ const p=TRK, bt=$("#trkBtn"); if(!p){ bt.classList.remove
   $("#trkT").textContent=`Pedido #${p.num}`;
   $("#trkB").innerHTML=`<div class="trkh ${p.status}"><span class="ic">${st.i}</span><div><b>${lab(p.status)}</b><small>${sub(p.status)}</small></div></div>
    ${p.status==="cancelado"?"":`<ol class="steps">${et.map((k,i)=>`<li class="${i<at?"done":i===at?"cur":""}"><span class="b">${i<at?"✓":STATUS[k].i}</span><span class="tx"><b>${lab(k)}</b><small>${p.hist&&p.hist[k]?hm(p.hist[k]):i===at+1&&!fim?"aguardando…":""}</small></span></li>`).join("")}</ol>`}
-   ${!fim?`<div class="tnote">⏱️ Esta tela atualiza sozinha. Pode deixar aberta.</div>`:""}
+   ${!fim?`<div class="tnote">⏱️ Esta tela atualiza sozinha. Pode deixar aberta.</div>`:""}${altHtml(p)}
    <div class="trkr"><b>Resumo${p.modo==="mesa"?` · Mesa ${esc(p.mesa)}`:""}</b>${p.itens.map(i=>`<div><span>${i.q}x ${esc(i.n)}${(i.det||[]).length?`<br><small style="margin:0">${i.det.map(esc).join(" · ")}</small>`:""}</span><span>${R(i.p*i.q)}</span></div>`).join("")}
     <div class="t"><span>Total</span><span>${R(p.total)}</span></div><small>💳 ${esc(p.pag)}${p.end?` · 🛵 ${esc(p.end.bairro)}`:p.modo==="mesa"?" · 🍽️ Mesa":" · 🏃 Retirada"}</small></div>
    ${CONFIG.whatsapp?`<a class="trkz" target="_blank" rel="noopener" href="https://wa.me/${CONFIG.whatsapp}?text=${encodeURIComponent(`Olá! Sobre o meu pedido #${p.num} (${p.cliente.nome}).`)}">💬 Falar com o Paiva no WhatsApp</a>`:""}
    ${fim?`<button class="trkz alt" id="trkFim">Fazer um novo pedido</button>`:""}`; }
+
+/* ============ alterar o pedido (cliente) ============ */
+const ALT_OK=["recebido","preparo"];
+function idDoItem(n){ const it=ITENS.find(i=>i.n===n)||(/^Pizza\b/.test(n)?ITENS.find(i=>i.pz):null); return it?it.id:"alt"; }
+function altHtml(p){ const s=lsG("paiva_alt"), meu=s&&s.id===p.id&&ALTR&&ALTR.id===s.req?ALTR.st:null;
+  const st=meu==="pendente"?`<div class="altst">⏳ Alteração enviada. Aguardando a loja confirmar.</div>`
+    :meu==="aceita"?`<div class="altst ok">✅ A loja aceitou a sua alteração. O resumo abaixo já está atualizado.</div>`
+    :meu==="recusada"?`<div class="altst no">❌ A loja não aceitou a alteração.${CONFIG.whatsapp?" Se precisar, fale com a gente no WhatsApp.":""}</div>`
+    :p.hist&&p.hist.alterado?`<div class="altst ok">✏️ Seu pedido foi alterado às ${hm(p.hist.alterado)}.</div>`:"";
+  const pode=ALT_OK.includes(p.status)&&meu!=="pendente";
+  return st+(pode?`<button class="trkz ed" id="trkAlt">✏️ Alterar meu pedido</button>`:""); }
+function iniciaAlt(){ const p=TRK; if(!p||!ALT_OK.includes(p.status)){ toast("Este pedido não pode mais ser alterado"); return; } ALT={id:p.id,num:p.num,p};
+  CART=p.itens.map((x,i)=>({k:"alt"+i,id:idDoItem(x.n),n:x.n,p:x.p,det:(x.det||[]).slice(),q:x.q,alt:1})); lsS("paiva_cart2",CART);
+  fecha(); render(); desenha(); desenhaAlt(); toast("✏️ Adicione ou tire itens e toque no carrinho para enviar"); }
+function sairAlt(){ ALT=null; CART=[]; lsS("paiva_cart2",CART); fecha(); render(); desenha(); desenhaAlt(); }
+function desenhaAlt(){ const on=!!ALT; $("#altBar").classList.toggle("on",on); document.body.classList.toggle("altm",on); $("#mC").classList.toggle("alt",on); $("#mC .hd h3").textContent=on?"Alterar pedido":"Seu pedido";
+  if(on){ $("#altBarT").innerHTML=`✏️ <b>Alterando o pedido #${esc(ALT.num)}</b><br>Adicione ou tire itens e toque no carrinho para enviar.`;
+    $("#altInfo").innerHTML=`✏️ Alterando o pedido #${esc(ALT.num)}. Mude as quantidades, tire ou adicione itens pelo cardápio. A loja recebe a alteração e confirma. Total anterior: ${R(ALT.p.total)}.`; } }
+async function enviarAlt(){ if(ENVIANDO||!CART.length||!ALT) return; const o=ALT.p, sub=CART.reduce((a,l)=>a+l.p*l.q,0), agora=Date.now(), tx=+o.taxa||0;
+  const ped={ loja:LOJA_ID, num:o.num, dia:o.dia||hojeISO(), criado:agora, status:"recebido", hist:{recebido:agora}, cliente:o.cliente, modo:o.modo, mesa:o.mesa||"", end:o.end||null,
+    itens:CART.map(l=>({n:l.n,det:l.det,q:l.q,p:l.p})), subtotal:sub, taxa:tx, total:sub+tx, pag:o.pag, troco:o.troco||"", obs:o.obs||"", alteracaoDe:o.id, tipo:"alteracao" };
+  const b=$("#bSend"); ENVIANDO=true; b.disabled=true; b.lastElementChild.textContent="Enviando…";
+  try{ const rid=await Promise.race([DB.criar(ped),new Promise((_,r)=>setTimeout(()=>r(new Error("tempo")),15000))]);
+    lsS("paiva_alt",{id:o.id,req:rid}); ENVIANDO=false; ALT=null; CART=[]; lsS("paiva_cart2",CART); fecha(); render(); desenha(); desenhaAlt(); ouvirAlt(rid); abre("#mT"); toast("✏️ Alteração enviada! Aguarde a loja confirmar."); }
+  catch(e){ ENVIANDO=false; const er=$("#err"); er.textContent="Não foi possível enviar a alteração agora. Tente de novo"+(CONFIG.whatsapp?" ou fale com a gente no WhatsApp.":"."); er.style.display="block"; }
+  finally{ b.firstElementChild.className="ic"; b.firstElementChild.textContent="✓"; desenha(); } }
+function ouvirAlt(rid){ ALToff&&ALToff(); ALTR={id:rid,st:"pendente"};
+  ALToff=DB.ouvir(rid,a=>{ const ant=ALTR&&ALTR.st, st=a&&a.alt?a.alt:"pendente"; ALTR={id:rid,st};
+    if(ant!==st&&st!=="pendente"){ toast(st==="aceita"?"✅ A loja aceitou a sua alteração":"❌ A loja não aceitou a alteração"); bipT(); } desenhaTrk(); }); }
 
 /* ============ efeitos ============ */
 function voa(from,src){ try{ if(!from||calmo){ bump(); return; } const a=from.getBoundingClientRect(), f=$("#fab .ci").getBoundingClientRect();
@@ -612,7 +649,8 @@ document.addEventListener("click",e=>{ const t=e.target.closest("button,[data-cl
   if(d.pq){ SEL.obs=$("#pObs").value; SEL.q=Math.max(1,SEL.q+(+d.pq)); drawP(); return; }
   if(d.cq){ const [i,s]=d.cq.split("|").map(Number); CART[i].q+=s; if(CART[i].q<=0) CART.splice(i,1); lsS("paiva_cart2",CART); render(); desenha(); return; }
   if(d.mod){ MOD=d.mod; desenhaEnd(); desenhaPag(); return; } if(d.pag){ PAG=d.pag; desenhaPag(); return; }
-  if(t.id==="pAdd") addP(); if(t.id==="fab") abreC(); if(t.id==="bSend") enviar(); if(t.id==="bZap") enviarZap();
+  if(t.id==="trkAlt"){ iniciaAlt(); return; } if(t.id==="altSair"){ sairAlt(); return; }
+  if(t.id==="pAdd") addP(); if(t.id==="fab") abreC(); if(t.id==="bSend") (ALT?enviarAlt():enviar()); if(t.id==="bZap") enviarZap();
   if(t.id==="trkBtn"){ abre("#mT"); return; } if(t.id==="trkFim"){ lsS("paiva_pedido",null); TRKoff&&TRKoff(); TRK=null; desenhaTrk(); fecha(); return; }
   if(t.id==="bPix"){ navigator.clipboard?.writeText(CONFIG.pix).then(()=>toast("Chave Pix copiada ✔")); }
   if(t.id==="bLoc"){ if(!navigator.geolocation){ toast("Localização indisponível"); return; } t.textContent="📍 Obtendo localização…";
@@ -623,7 +661,7 @@ render(); status();
 try{ new IntersectionObserver(([e])=>document.body.classList.toggle("longe",!e.isIntersecting)).observe($(".hero")); }catch(e){}
 DB.ouvirLoja(o=>{ const f=o.aberto===false; if(f!==FECHADO){ const era=FECHADO; FECHADO=f; status(); if(era&&!f) toast("🟢 Abrimos! Já pode enviar o seu pedido"); } });
 DB.ouvirOff(o=>{ OFF=o||{}; const antes=CART.length; CART=CART.filter(l=>{ const it=ITENS.find(i=>i.id===l.id); return !(it&&OFF[it.key]) && !(it&&it.pz&&PZ.some(([n])=>OFF[pzKey(n)]&&l.det.some(d=>/^Sabor/.test(d)&&d.includes(n)))); }); if(CART.length!==antes){ lsS("paiva_cart2",CART); toast("Um item do seu pedido acabou hoje"); } render(); desenha(); });
-(()=>{ const a=lsG("paiva_pedido"); if(a&&a.id) acompanhar(a.id,false); })();
+(()=>{ const a=lsG("paiva_pedido"); if(a&&a.id) acompanhar(a.id,false); const s=lsG("paiva_alt"); if(a&&s&&s.req&&s.id===a.id) ouvirAlt(s.req); })();
 window.__cardapio={ITENS,SECOES,PZ,AD};
 }
 </script>
