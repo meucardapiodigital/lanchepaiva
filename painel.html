@@ -270,6 +270,8 @@ body.claro .cfo button{background:#fff}body.claro .cfo button.on{background:var(
 .mmNome{display:block;width:100%;padding:16px;margin-bottom:8px;border-radius:14px;background:#16a34a;color:#fff;font-weight:800;font-size:17px;text-align:left}
 .mmNome:hover{background:#15803d}.mmNome span{float:right}
 #zapFb{position:fixed;left:50%;bottom:20px;z-index:80;transform:translate(-50%,160%);display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:14px;background:#1d0a08;border:1px solid #25d366;color:#fff3d6;font-size:13.5px;font-weight:700;box-shadow:0 10px 30px rgba(0,0,0,.5);transition:transform .3s;max-width:calc(100% - 20px)}
+.zmode{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:4px 0 12px;font-size:12.5px;font-weight:700;color:var(--mu)}
+.zmode button{padding:7px 10px;border-radius:10px;border:1px solid var(--ln);font-weight:800;font-size:12.5px}.zmode button.on{background:#16a34a;border-color:#16a34a;color:#fff}
 #zapFb.on{transform:translate(-50%,0)}#zapFb button{flex:none;padding:9px 12px;border-radius:10px;background:#16a34a;color:#fff;font-weight:800}#zapFb button+button{background:#2e0b0a}
 #mmSalva{padding:12px;border-radius:12px;background:var(--y);color:#1a1205;font-weight:800}
 @media(max-width:700px){.vw{padding:0 12px 30px}.csum b{font-size:16px}.vw .ih input[type=date],.vw .ih select{flex:1 1 40%;font-size:15px}#hBusca{order:3;flex:1 1 100%}.vw .ih .tb{flex:1 1 100%}.va button{min-width:0}}
@@ -391,10 +393,11 @@ function mountLogo(el,o){ o=o||{}; el.classList.add("lg3d"); el.classList.add(o.
   <div class="edtot"><span>Novo total</span><b id="edTot">R$ 0,00</b></div><small id="edAntes" class="edan"></small>
   <div class="cpgr"><small></small><button id="edSalva">💾 Salvar alteração</button></div></div></div>
 <div id="mMoto" class="mdl"><div class="bx"><div class="mh"><h3 id="mmT">🛵 Motoboys</h3><button class="xx" data-fecha="mMoto" aria-label="Fechar">✕</button></div>
+  <div class="zmode">Abrir o WhatsApp no: <button data-zm="app">💻 Aplicativo</button><button data-zm="web">🌐 WhatsApp Web</button></div>
   <div id="mmLista"></div>
   <div class="mmf"><small>Cadastrar motoboy</small><input id="mmNome" placeholder="Nome (ex.: João)"><input id="mmTel" type="tel" inputmode="tel" placeholder="WhatsApp com DDD (ex.: 92 9 9999-9999)"><button id="mmSalva">➕ Salvar motoboy</button></div>
   <p class="mp" style="margin-top:12px">A lista de motoboys fica salva neste aparelho. As entregas de cada um ficam salvas nos pedidos e aparecem em qualquer aparelho.</p></div></div>
-<div id="zapFb" role="status"><span>O WhatsApp do computador não abriu?</span><button id="zapWeb">Abrir no WhatsApp Web</button><button id="zapX" aria-label="Fechar">✕</button></div>
+<div id="zapFb" role="status"><span>O WhatsApp do computador não abriu?</span><button id="zapWeb">Abrir no WhatsApp Web</button><button id="zapSempreWeb">Usar sempre o Web</button><button id="zapX" aria-label="Fechar">✕</button></div>
 <div class="salvo" id="salvo">✔ Cardápio atualizado</div>
 <div id="mEnt"><div class="bx"><h3>🛵 WhatsApp do entregador</h3><p>Os pedidos são enviados para este número com o endereço e a localização do cliente. Fica salvo neste aparelho até você apagar ou trocar.</p>
   <div id="eAtual"></div><input id="eNum" type="tel" inputmode="tel" placeholder="(92) 9 9999-9999">
@@ -768,7 +771,9 @@ function desenhaCalc(){ const c=CALC, soma=f=>c.u.filter(f).reduce((a,x)=>a+x.v,
 function salvaPag(){ const p=CALC.p; p.pagamentos=CALC.pg.slice(); if(p.id) DB.atualizar(p.id,{pagamentos:CALC.pg}).catch(e=>alert(ERRO(e))); }
 document.addEventListener("click",e=>{ const a=e.target.closest&&e.target.closest("a[data-wa]"); if(a){ e.preventDefault(); abreZap(a.dataset.wa,a.dataset.wt); return; }
   const id=e.target.closest&&e.target.closest("button")&&e.target.closest("button").id;
-  if(id==="bZapApp") abreZap("",""); if(id==="zapWeb") zapWeb(); if(id==="zapX"){ clearTimeout(zapT); $("#zapFb").classList.remove("on"); } });
+  if(id==="bZapApp") abreZap("",""); if(id==="zapWeb") zapWeb(); if(id==="zapX"){ clearTimeout(zapT); $("#zapFb").classList.remove("on"); }
+  if(id==="zapSempreWeb"){ mudaZM("web"); zapWeb(); }
+  const zm=e.target.closest&&e.target.closest("[data-zm]"); if(zm) mudaZM(zm.dataset.zm); });
 document.addEventListener("input",e=>{ if(e.target.id==="cRec"&&CALC) desenhaCalc(); if(e.target.id==="edBusca"&&ED) desenhaEd(); });
 document.addEventListener("change",e=>{ const i=e.target.dataset&&e.target.dataset.cu; if(i!=null&&CALC){ CALC.u[+i].sel=e.target.checked; desenhaCalc(); } });
 $("#cTodos").onclick=()=>{ CALC.u.forEach(x=>{ if(!x.pago) x.sel=true; }); desenhaCalc(); };
@@ -828,25 +833,28 @@ function motos(){ let l=null; try{ l=JSON.parse(localStorage.getItem(MK)||"null"
   if(!Array.isArray(l)){ l=[]; const n=entNum(); if(n) l.push({id:"m"+Date.now().toString(36),nome:"Entregador",tel:n}); salvaMotos(l); } return l; }
 function salvaMotos(l){ try{ localStorage.setItem(MK,JSON.stringify(l)); }catch(e){} }
 let MZ=null;
-function abreMoto(p){ MZ=p||null; $(".mmf").style.display=p?"none":""; $("#mMoto .mp").style.display=p?"none":""; $("#mmT").textContent=p?`🛵 Enviar o pedido #${p.num} para qual motoboy?`:"🛵 Motoboys cadastrados"; $("#mmNome").value=""; $("#mmTel").value=""; desenhaMM(); $("#mMoto").classList.add("on"); }
+function abreMoto(p){ MZ=p||null; const tem=motos().length>0; $(".mmf").style.display=p&&tem?"none":""; $("#mMoto .mp").style.display=p&&tem?"none":""; $("#mmT").textContent=p?`🛵 Enviar o pedido #${p.num} para qual motoboy?`:"🛵 Motoboys cadastrados"; $("#mmNome").value=""; $("#mmTel").value=""; desenhaMM(); $("#mMoto").classList.add("on"); }
 function desenhaMM(){ const l=motos();
   $("#mmLista").innerHTML=l.length?MZ?l.map(m=>`<button class="mmNome" data-mgo="${m.id}">🛵 ${esc(m.nome)}<span>Enviar ➜</span></button>`).join("")
     :l.map(m=>`<div class="mmr"><div><b>${esc(m.nome)}</b><small>${esc(fmtTel(m.tel))}</small></div><button class="mmDel" data-mdel="${m.id}" title="Excluir" aria-label="Excluir ${esc(m.nome)}">🗑️</button></div>`).join("")
     :`<div class="vazio">Nenhum motoboy cadastrado ainda. Cadastre abaixo.</div>`; }
 /* abre o WhatsApp do computador (aplicativo) já na conversa e com a mensagem escrita; se não abrir, oferece o WhatsApp Web na MESMA aba */
-let ZAPW=null, zapT=0;
+let ZAPW=null, zapT=0, ZMODO="app"; try{ ZMODO=localStorage.getItem("painel_zapmodo")||"app"; }catch(e){}
+function desenhaZM(){ $$("[data-zm]").forEach(b=>b.classList.toggle("on",b.dataset.zm===ZMODO)); const b=$("#bZapApp"); if(b) b.title=ZMODO==="web"?"Abrir o WhatsApp Web":"Abrir o WhatsApp do computador"; }
+function mudaZM(m){ ZMODO=m; try{ localStorage.setItem("painel_zapmodo",m); }catch(e){} desenhaZM(); toastS(m==="web"?"🌐 O WhatsApp vai abrir no WhatsApp Web (sempre na mesma aba)":"💻 O WhatsApp vai abrir no aplicativo do computador",2600); }
+desenhaZM();
 function abreZap(tel,txt){ const d=String(tel||"").replace(/\D/g,""), num=d?(d.length<=11?"55"+d:d):"";
-  ZAPW={num,txt:txt||""}; let saiu=false; const f=()=>{ saiu=true; }; window.addEventListener("blur",f,{once:true});
+  ZAPW={num,txt:txt||""}; if(ZMODO==="web"){ zapWeb(); return; } let saiu=false; const f=()=>{ saiu=true; }; window.addEventListener("blur",f,{once:true});
   const a=document.createElement("a"); a.href=num?`whatsapp://send?phone=${num}${txt?`&text=${encodeURIComponent(txt)}`:""}`:"whatsapp://"; document.body.appendChild(a); a.click(); a.remove();
   clearTimeout(zapT); $("#zapFb").classList.remove("on");
-  zapT=setTimeout(()=>{ window.removeEventListener("blur",f); if(!saiu&&!document.hidden) $("#zapFb").classList.add("on"); zapT=setTimeout(()=>$("#zapFb").classList.remove("on"),9000); },2500); }
+  zapT=setTimeout(()=>{ window.removeEventListener("blur",f); if(!saiu&&!document.hidden&&document.hasFocus()) $("#zapFb").classList.add("on"); zapT=setTimeout(()=>$("#zapFb").classList.remove("on"),12000); },6000); }
 function zapWeb(){ const z=ZAPW||{num:"",txt:""}; $("#zapFb").classList.remove("on");
   window.open(z.num?`https://web.whatsapp.com/send?phone=${z.num}${z.txt?`&text=${encodeURIComponent(z.txt)}`:""}`:"https://web.whatsapp.com/","zapweb"); }
 function mandaMoto(p,m){ abreZap(m.tel,msgZap(p));
   DB.atualizar(p.id,{entregador:m.nome,entregadorId:m.id,"hist.enviado":Date.now()}).catch(e=>alert(ERRO(e)));
   p.entregador=m.nome; p.hist={...(p.hist||{}),enviado:Date.now()}; fechaM("mMoto"); MZ=null; toastS(`🛵 Pedido #${p.num} enviado para ${m.nome}`);
   if(VIEW==="hist") desenhaHist(); if(VIEW==="moto") desenhaMoto(); }
-function enviaZap(p){ const l=motos(); if(l.length===1){ mandaMoto(p,l[0]); return; } abreMoto(p); }
+function enviaZap(p){ abreMoto(p); }
 $("#mmSalva").onclick=()=>{ const nome=$("#mmNome").value.trim(); let d=$("#mmTel").value.replace(/\D/g,""); if(d.startsWith("55")&&d.length>11) d=d.slice(2);
   if(!nome){ alert("Digite o nome do motoboy."); $("#mmNome").focus(); return; }
   if(d.length<10||d.length>11){ alert("Digite o WhatsApp com DDD. Ex.: (92) 9 9999-9999"); $("#mmTel").focus(); return; }
