@@ -206,6 +206,18 @@ body.claro .lgimg img{filter:drop-shadow(0 5px 9px rgba(80,40,0,.3))}
 .cgr>button{flex:none;padding:8px 10px;border-radius:10px;border:1px solid var(--ln);font-weight:800;font-size:12.5px;background:#1d0a08}
 body.claro .cgr button{background:#fff}
 .cu.cuc{margin-left:14px}
+.cfp{margin-top:12px;padding:12px;border-radius:14px;border:1px solid var(--ln)}.cfp>small{display:block;color:var(--mu);font-weight:800;font-size:12.5px;margin-bottom:8px}
+.cfo{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.cfo button{padding:11px 4px;border-radius:12px;border:1px solid var(--ln);font-weight:800;font-size:13px;background:#1d0a08}
+.cfo button.on{background:var(--y);color:#1a1205;border-color:var(--y)}
+.cdin{display:none;align-items:end;gap:10px;margin-top:10px}.cdin.on{display:flex}.cdin label{flex:1;font-size:12.5px;font-weight:700;color:var(--mu)}
+.cdin input{display:block;width:100%;margin-top:4px;padding:11px 12px;border-radius:12px;border:1px solid var(--ln);background:#110505;color:var(--tx);font-size:16px}
+.cdin div{text-align:center;padding:6px 12px;border-radius:12px;background:rgba(34,197,94,.14);border:1px solid #22c55e}.cdin div small{display:block;font-size:11.5px;color:var(--mu);font-weight:700}.cdin div b{font-size:18px;color:#86efac}
+.cdin div.neg{background:rgba(239,68,68,.14);border-color:#ef4444}.cdin div.neg b{color:#fca5a5}
+#cHist{margin-top:12px}#cHist h4{font-size:14px;color:var(--y2);margin-bottom:6px}
+.chp{padding:9px 12px;border-radius:12px;border:1px solid var(--ln);margin-bottom:6px;font-size:13.5px}.chp b{display:block}.chp small{display:block;color:var(--mu);font-size:12px;line-height:1.4}
+.chr{font-size:12.5px;color:var(--mu);font-weight:700;margin-top:4px}
+body.claro .cfo button{background:#fff}body.claro .cfo button.on{background:var(--y)}body.claro .cdin input{background:#fff}body.claro .cdin div b{color:#15803d}body.claro .cdin div.neg b{color:#b91c1c}
+@media(max-width:420px){.cfo{grid-template-columns:1fr 1fr}}
 .csum{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0 10px}
 .csum div{padding:10px;border-radius:14px;background:rgba(242,183,5,.08);border:1px solid var(--ln);text-align:center}
 .csum small{display:block;color:var(--mu);font-size:11.5px;font-weight:700}.csum b{font-size:18px;color:var(--y2);white-space:nowrap}
@@ -346,7 +358,11 @@ function mountLogo(el,o){ o=o||{}; el.classList.add("lg3d"); el.classList.add(o.
   <div id="cLista"></div>
   <div class="csum"><div><small>Selecionado</small><b id="cSel">R$ 0,00</b></div><div><small>Falta pagar</small><b id="cFalta">R$ 0,00</b></div><div><small>Total do pedido</small><b id="cTot">R$ 0,00</b></div></div>
   <div class="cdiv"><span id="cBase">Dividir por</span><span class="cst"><button data-cp="-1" aria-label="Menos uma pessoa">−</button><b id="cPes">1</b><button data-cp="1" aria-label="Mais uma pessoa">+</button></span><span>pessoa(s) = <b id="cCada">R$ 0,00</b> cada</span></div>
-  <div class="cpgr"><small id="cPagos"></small><button id="cPago">✅ Registrar pagamento</button></div></div></div>
+  <div class="cfp"><small>Forma de pagamento desta pessoa</small>
+    <div class="cfo"><button data-fp="Crédito">💳 Crédito</button><button data-fp="Débito">💳 Débito</button><button data-fp="Pix">⚡ Pix</button><button data-fp="Dinheiro">💵 Dinheiro</button></div>
+    <div id="cDin" class="cdin"><label>Valor recebido em dinheiro<input id="cRec" type="text" inputmode="decimal" placeholder="Ex.: 50,00" autocomplete="off"></label><div><small>Troco</small><b id="cTroco">R$ 0,00</b></div></div></div>
+  <div class="cpgr"><small id="cPagos"></small><button id="cPago">✅ Registrar pagamento</button></div>
+  <div id="cHist"></div></div></div>
 <div id="mMoto" class="mdl"><div class="bx"><div class="mh"><h3 id="mmT">🛵 Motoboys</h3><button class="xx" data-fecha="mMoto" aria-label="Fechar">✕</button></div>
   <div id="mmLista"></div>
   <div class="mmf"><small>Cadastrar motoboy</small><input id="mmNome" placeholder="Nome (ex.: João)"><input id="mmTel" type="tel" inputmode="tel" placeholder="WhatsApp com DDD (ex.: 92 9 9999-9999)"><button id="mmSalva">➕ Salvar motoboy</button></div>
@@ -690,6 +706,9 @@ const TURBINE={[nk("Refri 1L + Batata-frita 200 g")]:[["Refri 1L",8],["Batata-fr
 function extrasDe(i){ const l=[]; (i.det||[]).forEach(d=>{ const m=String(d).match(/^turbin\w*[^:]*:\s*(.+)$/i); if(m&&TURBINE[nk(m[1])]) l.push(...TURBINE[nk(m[1])]); }); return l; }
 /* combo inteiro no topo e, embaixo, o valor total dividido em partes iguais (ex.: 4 Kikão + 1 Refri = 5 partes de R$ 8,00) */
 function partesValor(g,tot,n,gt){ return rateia(tot,Array(n).fill(1)).map((v,j)=>({l:`Parte ${j+1} de ${n}`,d:"valor do combo dividido igual",v,sel:false,pago:false,g,gt:j===0?{...gt,np:n}:null})); }
+function mudaPartes(gg,n){ const ini=CALC.u.findIndex(x=>x.g===gg), grp=CALC.u.filter(x=>x.g===gg); if(ini<0) return;
+  const gt=grp[0].gt; n=Math.max(1,Math.min(20,n)); CALC.u.splice(ini,grp.length,...partesValor(gg,gt.v,n,gt)); }
+const numBR=v=>{ const x=parseFloat(String(v||"").replace(/[^\d,.]/g,"").replace(/\.(?=\d{3}(\D|$))/g,"").replace(",",".")); return isFinite(x)?x:0; };
 function abreCalc(p){ const u=[]; let g=0; p.itens.forEach(i=>{ const pc=ehCombo(i)?partesCombo(i):null;
     for(let k=0;k<i.q;k++){ const tag=i.q>1?` (${k+1} de ${i.q})`:"";
       const ex=extrasDe(i), vex=ex.reduce((a,x)=>a+x[1],0), base=Math.max(0,(+i.p||0)-vex);
@@ -698,19 +717,37 @@ function abreCalc(p){ const u=[]; let g=0; p.itens.forEach(i=>{ const pc=ehCombo
       else { u.push({l:i.n+tag,d:(i.det||[]).join(" · "),v:base,sel:false,pago:false});
         ex.forEach(([n,v])=>u.push({l:`1x ${n}`,d:"turbine · "+i.n+tag,v,sel:false,pago:false})); } } });
   if(p.taxa) u.push({l:"Taxa de entrega",d:"",v:+p.taxa,sel:false,pago:false});
-  CALC={p,u,pes:1}; $("#cNum").textContent=p.num; desenhaCalc(); $("#mCalc").classList.add("on"); }
+  CALC={p,u,pes:1,fp:"",pg:Array.isArray(p.pagamentos)?p.pagamentos.slice():[]};
+  const ult=CALC.pg[CALC.pg.length-1]; if(ult&&ult.np) Object.entries(ult.np).forEach(([gg,n])=>mudaPartes(+gg,+n));
+  CALC.pg.forEach(x=>(x.idx||[]).forEach(i=>{ if(CALC.u[i]) CALC.u[i].pago=true; }));
+  $("#cRec").value=""; $("#cNum").textContent=p.num; desenhaCalc(); $("#mCalc").classList.add("on"); }
 function desenhaCalc(){ const c=CALC, soma=f=>c.u.filter(f).reduce((a,x)=>a+x.v,0), tot=soma(()=>true), sel=soma(x=>x.sel), pago=soma(x=>x.pago), falta=tot-pago;
   $("#cLista").innerHTML=c.u.map((x,i)=>`${x.gt?`<div class="cgr"><span class="cn"><b>🍔 ${esc(x.gt.n)} · ${R(x.gt.v)}</b>${x.gt.d?`<small>${esc(x.gt.d)}</small>`:""}</span><span class="cst"><button data-cgp="${x.g}|-1" aria-label="Menos uma parte">−</button><b>${x.gt.np}</b><button data-cgp="${x.g}|1" aria-label="Mais uma parte">+</button></span><button data-cg="${x.g}">☑️ Combo todo</button></div>`:""}<label class="cu${x.g?" cuc":""}${x.pago?" pg":""}${x.sel?" on":""}"><input type="checkbox" data-cu="${i}"${x.sel?" checked":""}${x.pago?" disabled":""}><span class="cn"><b>${esc(x.l)}</b>${x.d?`<small>${esc(x.d)}</small>`:""}</span><span class="cv">${x.pago?"pago ✔":R(x.v)}</span></label>`).join("");
   const base=sel||falta;
   $("#cSel").textContent=R(sel); $("#cFalta").textContent=R(falta); $("#cTot").textContent=R(tot); $("#cPes").textContent=c.pes;
   $("#cBase").textContent=sel?"Dividir o selecionado por":"Dividir o que falta por"; $("#cCada").textContent=R(base/c.pes);
-  $("#cPago").disabled=!sel; $("#cPagos").textContent=pago?`Já pago: ${R(pago)}`:""; }
+  const din=c.fp==="Dinheiro", rec=numBR($("#cRec").value), tro=rec-sel, falt=din&&rec>0&&tro<-0.004;
+  $$(".cfo button").forEach(b=>b.classList.toggle("on",b.dataset.fp===c.fp)); $("#cDin").classList.toggle("on",din);
+  $("#cTroco").textContent=!rec?"—":falt?"faltam "+R(-tro):R(tro); $("#cTroco").parentNode.classList.toggle("neg",falt);
+  $("#cPago").disabled=!sel||!c.fp||falt;
+  $("#cPagos").textContent=!sel?(pago?`Já pago: ${R(pago)}`:"Marque o que a pessoa vai pagar"):!c.fp?"Escolha a forma de pagamento":falt?"Valor recebido menor que o selecionado":`Pagar ${R(sel)} no ${c.fp.toLowerCase()}`;
+  const res={}; c.pg.forEach(x=>res[x.fp]=(res[x.fp]||0)+x.v);
+  $("#cHist").innerHTML=c.pg.length?`<h4>Pagamentos registrados (${R(pago)})</h4>`+c.pg.map((x,i)=>`<div class="chp"><b>${i+1}. ${R(x.v)} · ${esc(x.fp)}${x.fp==="Dinheiro"&&x.rec?` · recebeu ${R(x.rec)} · troco ${R(x.troco)}`:""}</b><small>${esc((x.itens||[]).join(" + "))} · ${hm(x.t)}</small></div>`).join("")
+    +`<div class="chr">Por forma: ${Object.entries(res).map(([k,v])=>`${esc(k)} ${R(v)}`).join(" · ")}</div>`:""; }
+function salvaPag(){ const p=CALC.p; p.pagamentos=CALC.pg.slice(); if(p.id) DB.atualizar(p.id,{pagamentos:CALC.pg}).catch(e=>alert(ERRO(e))); }
+document.addEventListener("input",e=>{ if(e.target.id==="cRec"&&CALC) desenhaCalc(); });
 document.addEventListener("change",e=>{ const i=e.target.dataset&&e.target.dataset.cu; if(i!=null&&CALC){ CALC.u[+i].sel=e.target.checked; desenhaCalc(); } });
 $("#cTodos").onclick=()=>{ CALC.u.forEach(x=>{ if(!x.pago) x.sel=true; }); desenhaCalc(); };
 $("#cLimpa").onclick=()=>{ CALC.u.forEach(x=>x.sel=false); desenhaCalc(); };
-$("#cZera").onclick=()=>{ CALC.u.forEach(x=>{ x.sel=false; x.pago=false; }); CALC.pes=1; desenhaCalc(); };
-$("#cPago").onclick=()=>{ const v=CALC.u.filter(x=>x.sel).reduce((a,x)=>a+x.v,0); CALC.u.forEach(x=>{ if(x.sel){ x.pago=true; x.sel=false; } }); CALC.pes=1; desenhaCalc();
-  toastS(CALC.u.every(x=>x.pago)?"✅ Conta toda paga":`✅ Pagamento de ${R(v)} registrado`); };
+$("#cZera").onclick=()=>{ if(CALC.pg.length&&!confirm("Recomeçar apaga os pagamentos já registrados deste pedido. Continuar?")) return;
+  CALC.u.forEach(x=>{ x.sel=false; x.pago=false; }); CALC.pes=1; CALC.fp=""; $("#cRec").value=""; const tinha=CALC.pg.length; CALC.pg=[]; if(tinha) salvaPag(); desenhaCalc(); };
+$("#cPago").onclick=()=>{ const c=CALC, idx=c.u.map((x,i)=>x.sel?i:-1).filter(i=>i>=0); if(!idx.length||!c.fp) return;
+  const v=Math.round(idx.reduce((a,i)=>a+c.u[i].v,0)*100)/100, rec=c.fp==="Dinheiro"?numBR($("#cRec").value):0;
+  const np={}; c.u.forEach(x=>{ if(x.gt) np[x.g]=x.gt.np; });
+  const itens=idx.map(i=>{ const x=c.u[i]; if(!x.g) return x.l; const h=c.u.slice(0,i+1).reverse().find(y=>y.g===x.g&&y.gt); return x.l+(h?" ("+h.gt.n+")":""); });
+  c.pg.push({v,fp:c.fp,rec:rec||null,troco:rec?Math.round((rec-v)*100)/100:null,itens,idx,np,t:Date.now()});
+  idx.forEach(i=>{ c.u[i].pago=true; c.u[i].sel=false; }); c.pes=1; const fp=c.fp; c.fp=""; $("#cRec").value=""; salvaPag(); desenhaCalc();
+  toastS(c.u.every(x=>x.pago)?"✅ Conta toda paga":`✅ ${R(v)} no ${fp.toLowerCase()} registrado${rec&&rec>v?` · troco ${R(rec-v)}`:""}`,2600); };
 
 /* ---- 🛵 motoboys ---- */
 const MK="painel_motoboys_"+LOJA_ID;
@@ -740,7 +777,7 @@ function via(p){ const h=p.hist||{}, tl=Object.keys(ETQ).filter(k=>h[k]).map(k=>
   ${p.end?`<div class="vc">📍 ${esc(p.end.rua)}${p.end.num?", nº "+esc(p.end.num):""} — <b>${esc(p.end.bairro)}</b>${p.end.comp?" · "+esc(p.end.comp):""}${p.end.ref?" · Ref.: "+esc(p.end.ref):""}${p.end.loc?` · <a target="_blank" href="${esc(p.end.loc)}">🗺️ ver localização</a>`:""}</div>`:""}
   ${p.entregador?`<div class="vc">🛵 Motoboy: <b>${esc(p.entregador)}</b></div>`:""}
   <div class="vi">${p.itens.map(i=>`<div><span>${i.q}x ${esc(i.n)}${(i.det||[]).length?`<small>${esc(i.det.join(" · "))}</small>`:""}</span><span>${R(i.p*i.q)}</span></div>`).join("")}${p.taxa?`<div><span>Taxa de entrega</span><span>${R(p.taxa)}</span></div>`:""}<div class="vt"><span>Total</span><span>${R(p.total)}</span></div></div>
-  <div class="vc">💳 ${esc(p.pag)}${p.troco?` · troco para R$ ${esc(p.troco)}`:""}</div>${p.obs?`<div class="vc">📝 ${esc(p.obs)}</div>`:""}
+  <div class="vc">💳 ${esc(p.pag)}${p.troco?` · troco para R$ ${esc(p.troco)}`:""}</div>${(p.pagamentos||[]).length?`<div class="vc">🧮 <b>Pago no balcão:</b> ${p.pagamentos.map(x=>`${R(x.v)} ${esc(x.fp)}${x.fp==="Dinheiro"&&x.troco?` (troco ${R(x.troco)})`:""}`).join(" · ")}</div>`:""}${p.obs?`<div class="vc">📝 ${esc(p.obs)}</div>`:""}
   ${tl?`<div class="vtl">${tl}</div>`:""}</div>
   <div class="va"><button data-via="${p.id}">🖨️ Imprimir 2ª via</button><button data-calc="${p.id}">🧮 Dividir conta</button>${p.modo==="entrega"?`<button data-hz="${p.id}">💬 ${p.entregador?"Reenviar ao motoboy":"Enviar ao motoboy"}</button>`:""}</div></div>`; }
 async function carregaHist(){ const d=$("#hData").value||hojeISO(); $("#hData").value=d; $("#hData").max=hojeISO(); $("#hRes").textContent="Carregando…";
@@ -781,9 +818,10 @@ document.addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b
   if(d.hz){ const p=achar(d.hz); p&&enviaZap(p); return; }
   if(d.mgo){ const m=motos().find(x=>x.id===d.mgo); if(m&&MZ) mandaMoto(MZ,m); return; }
   if(d.mdel){ const m=motos().find(x=>x.id===d.mdel); if(m&&confirm(`Excluir ${m.nome} da lista de motoboys? As entregas que ele já fez continuam salvas nos pedidos.`)){ salvaMotos(motos().filter(x=>x.id!==d.mdel)); desenhaMM(); if(VIEW==="moto") desenhaMoto(); } return; }
+  if(d.fp&&CALC){ CALC.fp=CALC.fp===d.fp?"":d.fp; desenhaCalc(); if(CALC.fp==="Dinheiro") setTimeout(()=>$("#cRec").focus(),50); return; }
   if(d.cgp&&CALC){ const [gs,dl]=d.cgp.split("|"), gg=+gs, ini=CALC.u.findIndex(x=>x.g===gg), grp=CALC.u.filter(x=>x.g===gg); if(ini<0) return;
     if(grp.some(x=>x.pago)){ toastS("Já tem parte paga neste combo. Toque em ↺ Recomeçar para mudar as partes.",2600); return; }
-    const gt=grp[0].gt, n=Math.max(1,Math.min(20,gt.np+ +dl)); CALC.u.splice(ini,grp.length,...partesValor(gg,gt.v,n,gt)); desenhaCalc(); return; }
+    mudaPartes(gg,grp[0].gt.np+ +dl); desenhaCalc(); return; }
   if(d.cg&&CALC){ const l=CALC.u.filter(x=>x.g===+d.cg&&!x.pago), marca=l.some(x=>!x.sel); l.forEach(x=>x.sel=marca); desenhaCalc(); return; }
   if(d.cp&&CALC){ CALC.pes=Math.max(1,Math.min(30,CALC.pes+ +d.cp)); desenhaCalc(); return; }
 });
